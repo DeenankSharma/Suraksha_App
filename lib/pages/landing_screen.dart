@@ -84,7 +84,7 @@ class LandingScreen extends StatelessWidget {
                     height: screenHeight * 0.07,
                     child: ElevatedButton(
                       onPressed: () {
-                        GoRouter.of(context).go('/login');
+                        GoRouter.of(context).push('/login');
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,
