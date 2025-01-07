@@ -1,7 +1,5 @@
-import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_setup/pages/home_screen.dart';
-import 'package:flutter_setup/pages/landing_screen.dart';
 import 'package:flutter_setup/pages/login_with_otp_screen.dart';
 
 class AppRouter {
@@ -14,12 +12,12 @@ class AppRouter {
       GoRoute(
         path: '/',
         name: 'landing',
-        builder: (context, state) => const LandingScreen(),
+        builder: (context, state) =>  HomeScreen(),
       ),
       GoRoute(
         path: '/home',
         name: 'home',
-        builder: (context, state) => const HomeScreen(),
+        builder: (context, state) => HomeScreen(),
       ),
       GoRoute(
         path: '/login',

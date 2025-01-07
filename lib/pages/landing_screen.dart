@@ -18,7 +18,7 @@ class LandingScreen extends StatelessWidget {
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
               colors: [
-                const Color.fromARGB(255, 106, 206, 245),
+                const Color(0xFF6ACEF5),
                 const Color.fromARGB(255, 0, 56, 147).withOpacity(0.8),
               ],
             ),
