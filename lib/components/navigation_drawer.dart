@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_setup/bloc/home_bloc.dart';
+import 'package:go_router/go_router.dart';
 
 class Navigation_Drawer extends StatelessWidget {
-  const Navigation_Drawer({super.key});
-
+  const Navigation_Drawer({super.key, required this.select});
+  final int select;
   @override
   Widget build(BuildContext context) {
     const primaryBlue = Color.fromARGB(255, 0, 56, 147);
-
     return Drawer(
       child: Container(
         color: Colors.white,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Drawer Header
             DrawerHeader(
               decoration: BoxDecoration(color: primaryBlue),
               child: Row(
@@ -29,7 +30,10 @@ class Navigation_Drawer extends StatelessWidget {
                     children: [
                       Text(
                         'John Doe',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineMedium
+                            ?.copyWith(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
                             ),
@@ -52,42 +56,50 @@ class Navigation_Drawer extends StatelessWidget {
                 padding: EdgeInsets.zero,
                 children: [
                   DrawerItem(
+                    icon: Icons.home,
+                    title: 'Home',
+                    onTap: () {
+                      context.go('/home');
+                    },
+                  ),
+                  DrawerItem(
                     icon: Icons.history,
                     title: 'Previous Logs',
                     onTap: () {
-                      // Navigate to Previous Logs
+                      context.go('/contacts');
                     },
                   ),
                   DrawerItem(
                     icon: Icons.contacts,
                     title: 'Manage Contacts',
                     onTap: () {
-                      // Navigate to Manage Contacts
+                      context.read<HomeBloc>().add(ShowContactsEvent());
+                      context.go('/manage_contacts');
                     },
                   ),
-                  const SizedBox(height: 310,),
+                  const SizedBox(
+                    height: 260,
+                  ),
                   const Divider(),
                   DrawerItem(
                     icon: Icons.person,
                     title: 'Profile',
                     onTap: () {
-                      // Navigate to Profile
+                      context.go('/profile');
                     },
                   ),
                   DrawerItem(
                     icon: Icons.settings,
                     title: 'Settings',
                     onTap: () {
-                      // Navigate to Settings
+                      context.go('/settings');
                     },
                   ),
                   // const Divider(),
                   DrawerItem(
                     icon: Icons.logout,
                     title: 'Logout',
-                    onTap: () {
-                      // Handle Logout
-                    },
+                    onTap: () {},
                   ),
                 ],
               ),

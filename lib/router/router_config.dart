@@ -1,6 +1,8 @@
-import 'package:go_router/go_router.dart';
+import 'package:flutter_setup/pages/contacts.dart';
+import 'package:flutter_setup/pages/contacts_log.dart';
 import 'package:flutter_setup/pages/home_screen.dart';
 import 'package:flutter_setup/pages/login_with_otp_screen.dart';
+import 'package:go_router/go_router.dart';
 
 class AppRouter {
   // Private constructor to prevent instantiation
@@ -12,7 +14,7 @@ class AppRouter {
       GoRoute(
         path: '/',
         name: 'landing',
-        builder: (context, state) =>  HomeScreen(),
+        builder: (context, state) => HomeScreen(),
       ),
       GoRoute(
         path: '/home',
@@ -24,10 +26,16 @@ class AppRouter {
         name: 'login',
         builder: (context, state) => LoginWithOtpScreen(),
       ),
+      GoRoute(
+        path: '/contacts',
+        name: 'contacts',
+        builder: (context, state) => ContactsLog(),
+      ),
+      GoRoute(
+        path: '/manage_contacts',
+        name: 'manage_contacts',
+        builder: (context, state) => Contacts(),
+      ),
     ],
   );
-
-  static const String landing = '/';
-  static const String home = '/home';
-  static const String login = '/login';
 }

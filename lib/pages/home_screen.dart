@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_setup/components/navigation_drawer.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -20,7 +19,8 @@ class HomeScreen extends StatelessWidget {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: AppBar(
-          backgroundColor: const Color.fromARGB(255, 0, 204, 255),
+          backgroundColor:
+              const Color.fromARGB(255, 0, 56, 147).withOpacity(0.9),
           elevation: 0,
           flexibleSpace: Container(),
           title: Text(
@@ -30,14 +30,14 @@ class HomeScreen extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   fontSize: MediaQuery.of(context).size.height * 0.03,
                   letterSpacing: 1.2,
-                  
                 ),
-                
           ),
           centerTitle: false,
         ),
       ),
-      drawer: Navigation_Drawer(),
+      drawer: const Navigation_Drawer(
+        select: 1,
+      ),
       body: SingleChildScrollView(
         child: Container(
           height: screenHeight,
@@ -74,7 +74,8 @@ class HomeScreen extends StatelessWidget {
                       ],
                     ),
                     child: Material(
-                      color: const Color.fromARGB(255, 0, 56, 147).withOpacity(0.8),
+                      color: const Color.fromARGB(255, 0, 56, 147)
+                          .withOpacity(0.8),
                       borderRadius: BorderRadius.circular(20),
                       child: InkWell(
                         borderRadius: BorderRadius.circular(20),
@@ -82,10 +83,12 @@ class HomeScreen extends StatelessWidget {
                           // Add glow effect on tap
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(
-                              content: Text('Emergency help requested',style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500
-                              ),),
+                              content: Text(
+                                'Emergency help requested',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w500),
+                              ),
                               backgroundColor: Color(0xFF6ACEF5),
                             ),
                           );
@@ -143,115 +146,118 @@ class HomeScreen extends StatelessWidget {
                         ),
                   ),
                   SizedBox(height: screenHeight * 0.02),
-                      TextFormField(
-                      controller: _areaController,
-                      decoration: InputDecoration(
-                        labelText: 'Area/Street',
-                        hintText: 'Enter your area or street name',
-                        labelStyle: TextStyle(color: primaryBlue),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: primaryBlue),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: primaryBlue.withOpacity(0.3)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: primaryBlue, width: 2),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: primaryBlue),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: primaryBlue, width: 2),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        prefixIcon: Icon(Icons.location_on, color: primaryBlue),
+                  TextFormField(
+                    controller: _areaController,
+                    decoration: InputDecoration(
+                      labelText: 'Area/Street',
+                      hintText: 'Enter your area or street name',
+                      labelStyle: TextStyle(color: primaryBlue),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: primaryBlue),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please enter your area';
-                        }
-                        return null;
-                      },
-                    ),
-                  SizedBox(height: screenHeight * 0.02),
-                 TextFormField(
-                      controller: _landmarkController,
-                      decoration: InputDecoration(
-                        labelText: 'Landmark',
-                        // hintStyle: TextStyle(fontStyl ),
-                        hintText: 'Enter nearby landmark',
-                        labelStyle: TextStyle(color: primaryBlue),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: primaryBlue),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: primaryBlue.withOpacity(0.3)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: primaryBlue, width: 2),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: primaryBlue),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: primaryBlue, width: 2),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        prefixIcon: Icon(Icons.place, color: primaryBlue),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide:
+                            BorderSide(color: primaryBlue.withOpacity(0.3)),
                       ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: primaryBlue, width: 2),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: primaryBlue),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: primaryBlue, width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      prefixIcon: Icon(Icons.location_on, color: primaryBlue),
                     ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please enter your area';
+                      }
+                      return null;
+                    },
+                  ),
                   SizedBox(height: screenHeight * 0.02),
                   TextFormField(
-                      controller: _descriptionController,
-                      maxLines: 4,
-                      decoration: InputDecoration(
-                        labelText: 'Description',
-                        hintText: 'Describe your emergency or situation',
-                        labelStyle: TextStyle(color: primaryBlue),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: primaryBlue),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: primaryBlue.withOpacity(0.3)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: primaryBlue, width: 2),
-                        ),
-                        errorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: primaryBlue),
-                        ),
-                        focusedErrorBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: primaryBlue, width: 2),
-                        ),
-                        filled: true,
-                        fillColor: Colors.white,
-                        prefixIcon: Icon(Icons.description, color: primaryBlue),
+                    controller: _landmarkController,
+                    decoration: InputDecoration(
+                      labelText: 'Landmark',
+                      // hintStyle: TextStyle(fontStyl ),
+                      hintText: 'Enter nearby landmark',
+                      labelStyle: TextStyle(color: primaryBlue),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: primaryBlue),
                       ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return 'Please provide a description';
-                        }
-                        return null;
-                      },
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide:
+                            BorderSide(color: primaryBlue.withOpacity(0.3)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: primaryBlue, width: 2),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: primaryBlue),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: primaryBlue, width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      prefixIcon: Icon(Icons.place, color: primaryBlue),
                     ),
+                  ),
+                  SizedBox(height: screenHeight * 0.02),
+                  TextFormField(
+                    controller: _descriptionController,
+                    maxLines: 4,
+                    decoration: InputDecoration(
+                      labelText: 'Description',
+                      hintText: 'Describe your emergency or situation',
+                      labelStyle: TextStyle(color: primaryBlue),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: primaryBlue),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide:
+                            BorderSide(color: primaryBlue.withOpacity(0.3)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: primaryBlue, width: 2),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: primaryBlue),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide(color: primaryBlue, width: 2),
+                      ),
+                      filled: true,
+                      fillColor: Colors.white,
+                      prefixIcon: Icon(Icons.description, color: primaryBlue),
+                    ),
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Please provide a description';
+                      }
+                      return null;
+                    },
+                  ),
                   SizedBox(height: screenHeight * 0.04),
                   ElevatedButton(
                     onPressed: () {
@@ -270,8 +276,8 @@ class HomeScreen extends StatelessWidget {
                       }
                     },
                     style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          const Color.fromARGB(255, 0, 56, 147).withOpacity(0.8),
+                      backgroundColor: const Color.fromARGB(255, 0, 56, 147)
+                          .withOpacity(0.8),
                       shadowColor: const Color(0xFF6ACEF5),
                       padding:
                           EdgeInsets.symmetric(vertical: screenHeight * 0.02),
