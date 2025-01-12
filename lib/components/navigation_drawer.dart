@@ -8,20 +8,52 @@ class Navigation_Drawer extends StatelessWidget {
   final int select;
   @override
   Widget build(BuildContext context) {
-    const primaryBlue = Color.fromARGB(255, 0, 56, 147);
+    final primaryBlue = const Color.fromARGB(255, 0, 56, 147);
     return Drawer(
       child: Container(
-        color: Colors.white,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              const Color.fromARGB(255, 106, 206, 245),
+              primaryBlue.withOpacity(0.8),
+            ],
+          ),
+        ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             DrawerHeader(
-              decoration: BoxDecoration(color: primaryBlue),
+              decoration: BoxDecoration(
+                color: primaryBlue.withOpacity(0.8),
+                boxShadow: [
+                  BoxShadow(
+                    color:
+                        const Color.fromARGB(255, 0, 110, 255).withOpacity(0.3),
+                    blurRadius: 15,
+                    spreadRadius: 2,
+                  ),
+                ],
+              ),
               child: Row(
                 children: [
-                  const CircleAvatar(
-                    radius: 40,
-                    backgroundImage: AssetImage("assets/image.jpg"),
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.2),
+                          blurRadius: 8,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: const CircleAvatar(
+                      radius: 40,
+                      backgroundImage: AssetImage("assets/image.jpg"),
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Column(
@@ -34,15 +66,22 @@ class Navigation_Drawer extends StatelessWidget {
                             .textTheme
                             .headlineMedium
                             ?.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withOpacity(0.3),
+                              offset: const Offset(0, 2),
+                              blurRadius: 4,
                             ),
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         'sharmadeenank@gmail.com',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.white70,
+                              color: Colors.white.withOpacity(0.9),
                             ),
                       ),
                     ],
@@ -50,7 +89,6 @@ class Navigation_Drawer extends StatelessWidget {
                 ],
               ),
             ),
-            // Drawer Items
             Expanded(
               child: ListView(
                 padding: EdgeInsets.zero,
@@ -58,48 +96,43 @@ class Navigation_Drawer extends StatelessWidget {
                   DrawerItem(
                     icon: Icons.home,
                     title: 'Home',
+                    isSelected: select == 1,
                     onTap: () {
+                      context.read<HomeBloc>().add(HomeScreenEvent());
                       context.go('/home');
                     },
                   ),
                   DrawerItem(
                     icon: Icons.history,
                     title: 'Previous Logs',
+                    isSelected: select == 2,
                     onTap: () {
+                      context.read<HomeBloc>().add(GetContactLogsEvent());
                       context.go('/contacts');
                     },
                   ),
                   DrawerItem(
                     icon: Icons.contacts,
                     title: 'Manage Contacts',
+                    isSelected: select == 3,
                     onTap: () {
                       context.read<HomeBloc>().add(ShowContactsEvent());
                       context.go('/manage_contacts');
                     },
                   ),
-                  const SizedBox(
-                    height: 260,
-                  ),
-                  const Divider(),
-                  DrawerItem(
-                    icon: Icons.person,
-                    title: 'Profile',
-                    onTap: () {
-                      context.go('/profile');
-                    },
+                  const SizedBox(height: 260),
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16),
+                    child: const Divider(color: Colors.white54, thickness: 1),
                   ),
                   DrawerItem(
                     icon: Icons.settings,
                     title: 'Settings',
+                    isSelected: select == 4,
                     onTap: () {
+                      context.read<HomeBloc>().add(OpenSettingsEvent());
                       context.go('/settings');
                     },
-                  ),
-                  // const Divider(),
-                  DrawerItem(
-                    icon: Icons.logout,
-                    title: 'Logout',
-                    onTap: () {},
                   ),
                 ],
               ),
@@ -111,28 +144,42 @@ class Navigation_Drawer extends StatelessWidget {
   }
 }
 
-// DrawerItem Widget for Reusability
 class DrawerItem extends StatelessWidget {
   final IconData icon;
   final String title;
   final VoidCallback? onTap;
+  final bool isSelected;
 
   const DrawerItem({
     super.key,
     required this.icon,
     required this.title,
     this.onTap,
+    this.isSelected = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: Theme.of(context).primaryColor),
-      title: Text(
-        title,
-        style: Theme.of(context).textTheme.bodyMedium,
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
       ),
-      onTap: onTap,
+      child: ListTile(
+        leading: Icon(icon, color: Colors.white),
+        title: Text(
+          title,
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+        ),
+        onTap: onTap,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:flutter_setup/pages/home_screen.dart';
 import 'package:flutter_setup/pages/landing_screen.dart';
 import 'package:flutter_setup/pages/login_with_otp_screen.dart';
 import 'package:flutter_setup/pages/otp_screen.dart';
+import 'package:flutter_setup/pages/profile_page.dart';
 import 'package:go_router/go_router.dart';
 
 class AppRouter {
@@ -33,11 +34,11 @@ class AppRouter {
         name: 'home',
         builder: (context, state) => HomeScreen(),
       ),
-      GoRoute(
-        path: '/login',
-        name: 'login',
-        builder: (context, state) => LoginWithOtpScreen(),
-      ),
+      // GoRoute(
+      //   path: '/login',
+      //   name: 'login',
+      //   builder: (context, state) => LoginWithOtpScreen(),
+      // ),
       GoRoute(
         path: '/contacts',
         name: 'contacts',
@@ -48,6 +49,12 @@ class AppRouter {
         name: 'manage_contacts',
         builder: (context, state) => Contacts(),
       ),
+      GoRoute(
+        path: '/profile',
+        name: 'profile',
+        builder: (context, state) => ProfilePage(),
+      ),
+      // GoRoute(path: .)ute
     ],
   );
 }

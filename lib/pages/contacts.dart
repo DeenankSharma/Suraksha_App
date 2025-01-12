@@ -18,7 +18,6 @@ class Contacts extends StatelessWidget {
         }
       },
       builder: (context, state) {
-        // Base Scaffold with common AppBar
         return Scaffold(
           appBar: PreferredSize(
             preferredSize: const Size.fromHeight(60),
@@ -68,13 +67,14 @@ class Contacts extends StatelessWidget {
           physics: const AlwaysScrollableScrollPhysics(),
           itemCount: state.contacts.length,
           itemBuilder: (context, index) {
+            final contact = state.contacts[index];
             return ContactWidget(
-              contact: state.contacts[index],
+              contact: contact,
               onAdd: () {
-                // Handle add contact
+                context.read<HomeBloc>().add(AddContactEvent(contact));
               },
               onRemove: () {
-                // Handle remove contact
+                context.read<HomeBloc>().add(RemoveContactEvent(contact));
               },
             );
           },

@@ -41,4 +41,27 @@ class OtpErrorState extends HomeState {
   OtpErrorState(this.error);
 }
 
+//Home Screen States
 class HomeScreenState extends HomeState {}
+
+// Help States
+class HelpRequestedState extends HomeScreenState {
+  final String type;
+
+  HelpRequestedState(this.type);
+}
+
+// Logs States
+class LogsFetchedState extends HomeScreenState {
+  final Map<String, dynamic> logs;
+
+  LogsFetchedState(this.logs);
+}
+
+class LogsErrorState extends HomeState {
+  final String error;
+
+  LogsErrorState(this.error);
+}
+
+class LogsLoadingState extends HomeState {}
