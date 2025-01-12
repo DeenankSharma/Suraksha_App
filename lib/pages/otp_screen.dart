@@ -12,12 +12,14 @@ class OtpVerificationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    HomeBloc homeBloc = HomeBloc();
     const primaryBlue = Color.fromARGB(255, 0, 56, 147);
     final screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       backgroundColor: primaryBlue,
       body: SafeArea(
           child: BlocConsumer(
+        bloc: homeBloc,
         listener: (context, state) {
           if (state is OtpVerifiedState) {
             context.go('/home');

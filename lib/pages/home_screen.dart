@@ -14,6 +14,7 @@ class HomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    HomeBloc homeBloc = HomeBloc();
     final screenHeight = MediaQuery.of(context).size.height;
     return Scaffold(
       appBar: PreferredSize(
@@ -41,6 +42,7 @@ class HomeScreen extends StatelessWidget {
       ),
       body: SingleChildScrollView(
           child: BlocConsumer(
+              bloc: homeBloc,
               listener: (context, state) {},
               builder: (context, state) {
                 if (state is OtpVerifiedState || state is HomeScreenState) {
@@ -66,111 +68,121 @@ class HomeScreen extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             SizedBox(height: screenHeight * 0.04),
-                            BlocBuilder(builder: (context, state) {
-                              if (state is HelpRequestedState) {
-                                return Container(
-                                  height: screenHeight * 0.15,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color.fromARGB(
-                                                255, 0, 110, 255)
-                                            .withOpacity(0.3),
-                                        blurRadius: 15,
-                                        spreadRadius: 2,
-                                      ),
-                                    ],
-                                  ),
-                                  child: Material(
-                                    color: const Color.fromARGB(255, 0, 56, 147)
-                                        .withOpacity(0.8),
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(20),
-                                      onTap: () {
-                                        // context.read<HomeBloc>().add(HelpButtonClickedEvent());
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Emergency help already requested',
-                                              style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w500),
-                                            ),
-                                            backgroundColor: Color(0xFF6ACEF5),
+                            BlocBuilder(
+                                bloc: homeBloc,
+                                builder: (context, state) {
+                                  if (state is HelpRequestedState) {
+                                    return Container(
+                                      height: screenHeight * 0.15,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color.fromARGB(
+                                                    255, 0, 110, 255)
+                                                .withOpacity(0.3),
+                                            blurRadius: 15,
+                                            spreadRadius: 2,
                                           ),
-                                        );
-                                      },
-                                      child: Center(
-                                        child: Text(
-                                          'HELP',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: screenHeight * 0.04,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 2,
+                                        ],
+                                      ),
+                                      child: Material(
+                                        color: const Color.fromARGB(
+                                                255, 0, 56, 147)
+                                            .withOpacity(0.8),
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: InkWell(
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          onTap: () {
+                                            // context.read<HomeBloc>().add(HelpButtonClickedEvent());
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Emergency help already requested',
+                                                  style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontWeight:
+                                                          FontWeight.w500),
+                                                ),
+                                                backgroundColor:
+                                                    Color(0xFF6ACEF5),
+                                              ),
+                                            );
+                                          },
+                                          child: Center(
+                                            child: Text(
+                                              'HELP',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: screenHeight * 0.04,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 2,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                );
-                              } else {
-                                return Container(
-                                  height: screenHeight * 0.15,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(20),
-                                    boxShadow: [
-                                      BoxShadow(
-                                        color: const Color.fromARGB(
-                                                255, 0, 110, 255)
-                                            .withOpacity(0.3),
-                                        blurRadius: 15,
-                                        spreadRadius: 2,
-                                      ),
-                                    ],
-                                  ),
-                                  child: Material(
-                                    color: const Color.fromARGB(255, 0, 56, 147)
-                                        .withOpacity(0.8),
-                                    borderRadius: BorderRadius.circular(20),
-                                    child: InkWell(
-                                      borderRadius: BorderRadius.circular(20),
-                                      onTap: () {
-                                        context
-                                            .read<HomeBloc>()
-                                            .add(HelpButtonClickedEvent());
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                              'Emergency help requested',
-                                              style: TextStyle(
-                                                  color: Colors.white,
-                                                  fontWeight: FontWeight.w500),
-                                            ),
-                                            backgroundColor: Color(0xFF6ACEF5),
+                                    );
+                                  } else {
+                                    return Container(
+                                      height: screenHeight * 0.15,
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(20),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: const Color.fromARGB(
+                                                    255, 0, 110, 255)
+                                                .withOpacity(0.3),
+                                            blurRadius: 15,
+                                            spreadRadius: 2,
                                           ),
-                                        );
-                                      },
-                                      child: Center(
-                                        child: Text(
-                                          'HELP',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: screenHeight * 0.04,
-                                            fontWeight: FontWeight.w800,
-                                            letterSpacing: 2,
+                                        ],
+                                      ),
+                                      child: Material(
+                                        color: const Color.fromARGB(
+                                                255, 0, 56, 147)
+                                            .withOpacity(0.8),
+                                        borderRadius: BorderRadius.circular(20),
+                                        child: InkWell(
+                                          borderRadius:
+                                              BorderRadius.circular(20),
+                                          onTap: () {
+                                            context
+                                                .read<HomeBloc>()
+                                                .add(HelpButtonClickedEvent());
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              const SnackBar(
+                                                content: Text(
+                                                  'Emergency help requested',
+                                                  style: TextStyle(
+                                                      color: Colors.white,
+                                                      fontWeight:
+                                                          FontWeight.w500),
+                                                ),
+                                                backgroundColor:
+                                                    Color(0xFF6ACEF5),
+                                              ),
+                                            );
+                                          },
+                                          child: Center(
+                                            child: Text(
+                                              'HELP',
+                                              style: TextStyle(
+                                                color: Colors.white,
+                                                fontSize: screenHeight * 0.04,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 2,
+                                              ),
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  ),
-                                );
-                              }
-                            }),
+                                    );
+                                  }
+                                }),
 
                             SizedBox(height: screenHeight * 0.04),
                             // OR Divider
@@ -338,96 +350,104 @@ class HomeScreen extends StatelessWidget {
                               },
                             ),
                             SizedBox(height: screenHeight * 0.04),
-                            BlocBuilder(builder: (context, state) {
-                              if (state is HelpRequestedState &&
-                                  state.type == "desc") {
-                                return ElevatedButton(
-                                  onPressed: () {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text(
-                                          'Request Already Submitted',
-                                          style: TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w500),
+                            BlocBuilder(
+                                bloc: homeBloc,
+                                builder: (context, state) {
+                                  if (state is HelpRequestedState &&
+                                      state.type == "desc") {
+                                    return ElevatedButton(
+                                      onPressed: () {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Request Already Submitted',
+                                              style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.w500),
+                                            ),
+                                            backgroundColor: Color.fromARGB(
+                                                255, 0, 204, 255),
+                                          ),
+                                        );
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color.fromARGB(
+                                                255, 0, 56, 147)
+                                            .withOpacity(0.8),
+                                        shadowColor: const Color(0xFF6ACEF5),
+                                        padding: EdgeInsets.symmetric(
+                                            vertical: screenHeight * 0.02),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          // side: bo
                                         ),
-                                        backgroundColor:
-                                            Color.fromARGB(255, 0, 204, 255),
+                                      ),
+                                      child: const Text(
+                                        'Submit',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 25,
+                                          fontWeight: FontWeight.w600,
+                                        ),
                                       ),
                                     );
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        const Color.fromARGB(255, 0, 56, 147)
+                                  } else {
+                                    return ElevatedButton(
+                                      onPressed: () {
+                                        if (_formKey.currentState!.validate()) {
+                                          context.read<HomeBloc>().add(
+                                              HelpFormSubmittedEvent(
+                                                  area: _areaController.text
+                                                      .toString(),
+                                                  landmark: _landmarkController
+                                                      .text
+                                                      .toString(),
+                                                  description:
+                                                      _descriptionController
+                                                          .text
+                                                          .toString()));
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Submitting your request...',
+                                                style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight:
+                                                        FontWeight.w500),
+                                              ),
+                                              backgroundColor: Color.fromARGB(
+                                                  255, 0, 204, 255),
+                                            ),
+                                          );
+                                        }
+                                      },
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: const Color.fromARGB(
+                                                255, 0, 56, 147)
                                             .withOpacity(0.8),
-                                    shadowColor: const Color(0xFF6ACEF5),
-                                    padding: EdgeInsets.symmetric(
-                                        vertical: screenHeight * 0.02),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      // side: bo
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Submit',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 25,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                );
-                              } else {
-                                return ElevatedButton(
-                                  onPressed: () {
-                                    if (_formKey.currentState!.validate()) {
-                                      context.read<HomeBloc>().add(
-                                          HelpFormSubmittedEvent(
-                                              area: _areaController.text
-                                                  .toString(),
-                                              landmark: _landmarkController.text
-                                                  .toString(),
-                                              description:
-                                                  _descriptionController.text
-                                                      .toString()));
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
-                                        const SnackBar(
-                                          content: Text(
-                                            'Submitting your request...',
-                                            style: TextStyle(
-                                                color: Colors.white,
-                                                fontWeight: FontWeight.w500),
-                                          ),
-                                          backgroundColor:
-                                              Color.fromARGB(255, 0, 204, 255),
+                                        shadowColor: const Color(0xFF6ACEF5),
+                                        padding: EdgeInsets.symmetric(
+                                            vertical: screenHeight * 0.02),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius:
+                                              BorderRadius.circular(12),
+                                          // side: bo
                                         ),
-                                      );
-                                    }
-                                  },
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor:
-                                        const Color.fromARGB(255, 0, 56, 147)
-                                            .withOpacity(0.8),
-                                    shadowColor: const Color(0xFF6ACEF5),
-                                    padding: EdgeInsets.symmetric(
-                                        vertical: screenHeight * 0.02),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      // side: bo
-                                    ),
-                                  ),
-                                  child: const Text(
-                                    'Submit',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 25,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                );
-                              }
-                            })
+                                      ),
+                                      child: const Text(
+                                        'Submit',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 25,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                })
                           ],
                         ),
                       ),

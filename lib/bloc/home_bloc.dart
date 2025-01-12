@@ -26,7 +26,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<OpenSettingsEvent>(openSettings);
   }
 
-  String phone_number = '';
+  // String phone_number = '';
 
   Future<void> openSettings(
     OpenSettingsEvent event,
@@ -101,62 +101,58 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     emit(HomeScreenState());
   }
 
+  late String phoneNumber; // Declare as class member
+
   Future<void> sendOtpEvent(
     SendOtpEvent event,
     Emitter<HomeState> emit,
   ) async {
     try {
       emit(OtpLoadingState());
-      phone_number = event.phoneNumber;
+      phoneNumber = event.phoneNumber;
+
+      print('Attempting to verify phone number: $phoneNumber');
+
       await FirebaseAuth.instance.verifyPhoneNumber(
-        phoneNumber: '+91${event.phoneNumber}',
+        phoneNumber: '+91$phoneNumber',
         verificationCompleted: (PhoneAuthCredential credential) async {
           try {
-            await FirebaseAuth.instance.signInWithCredential(credential);
-            final SharedPreferences prefs =
-                await SharedPreferences.getInstance();
-            await prefs.setString('pn', event.phoneNumber);
+            print('Auto-verification in progress');
+            final userCredential =
+                await FirebaseAuth.instance.signInWithCredential(credential);
+            print('User signed in: ${userCredential.user?.uid}');
+
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString('pn', phoneNumber);
 
             emit(OtpVerifiedState());
           } catch (e) {
-            phone_number = '';
+            print('Auto-verification error: $e');
+            phoneNumber = '';
             emit(OtpErrorState('Auto-verification failed: ${e.toString()}'));
           }
         },
         verificationFailed: (FirebaseAuthException ex) {
-          String errorMessage;
-
-          switch (ex.code) {
-            case 'invalid-phone-number':
-              errorMessage = 'The provided phone number is invalid.';
-              break;
-            case 'too-many-requests':
-              errorMessage = 'Too many attempts. Please try again later.';
-              break;
-            case 'network-request-failed':
-              errorMessage = 'Network error. Please check your connection.';
-              break;
-            default:
-              errorMessage = 'Verification failed: ${ex.message}';
-          }
-          phone_number = '';
-          emit(OtpErrorState(errorMessage));
+          print('Verification failed with code: ${ex.code}');
         },
         codeSent: (String verificationId, int? resendToken) {
+          print('SMS code sent. VerificationId: $verificationId');
           emit(OtpSentState(
             verificationId: verificationId,
             resendToken: resendToken,
           ));
         },
         codeAutoRetrievalTimeout: (String verificationId) {
+          print('Auto retrieval timeout');
           emit(OtpSentState(
             verificationId: verificationId,
             resendToken: null,
           ));
         },
-        timeout: const Duration(seconds: 60),
+        timeout: const Duration(seconds: 120),
       );
     } catch (e) {
+      print('Top level error: $e');
       emit(OtpErrorState('Unexpected error occurred: ${e.toString()}'));
     }
   }
@@ -175,7 +171,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
       await FirebaseAuth.instance.signInWithCredential(credential);
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      await prefs.setString('pn', phone_number);
+      await prefs.setString('pn', phoneNumber);
       emit(OtpVerifiedState());
     } on FirebaseAuthException catch (e) {
       String errorMessage;
