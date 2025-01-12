@@ -22,6 +22,7 @@ class LoginWithOtpScreen extends StatelessWidget {
         bloc: homeBloc,
         listener: (context, state) {
           if (state is OtpSentState) {
+            print("navigating to otp screen");
             context.go('/otp');
           } else if (state is OtpVerifiedState) {
             context.go('/home');

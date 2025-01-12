@@ -41,6 +41,13 @@ class OtpErrorState extends HomeState {
   OtpErrorState(this.error);
 }
 
+class OtpTimeoutState extends HomeState {
+  final String message;
+  final String verificationId;
+
+  OtpTimeoutState({required this.message, required this.verificationId});
+}
+
 //Home Screen States
 class HomeScreenState extends HomeState {}
 

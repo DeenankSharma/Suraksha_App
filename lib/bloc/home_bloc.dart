@@ -115,6 +115,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
       await FirebaseAuth.instance.verifyPhoneNumber(
         phoneNumber: '+91$phoneNumber',
+        timeout: const Duration(seconds: 60), // Extend timeout if needed
         verificationCompleted: (PhoneAuthCredential credential) async {
           try {
             print('Auto-verification in progress');
@@ -125,37 +126,104 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
             final prefs = await SharedPreferences.getInstance();
             await prefs.setString('pn', phoneNumber);
 
-            emit(OtpVerifiedState());
+            if (!emit.isDone) {
+              emit(OtpVerifiedState());
+            }
           } catch (e) {
             print('Auto-verification error: $e');
             phoneNumber = '';
-            emit(OtpErrorState('Auto-verification failed: ${e.toString()}'));
+            if (!emit.isDone) {
+              emit(OtpErrorState('Auto-verification failed: ${e.toString()}'));
+            }
           }
         },
         verificationFailed: (FirebaseAuthException ex) {
           print('Verification failed with code: ${ex.code}');
+          if (!emit.isDone) {
+            emit(OtpErrorState('Verification failed: ${ex.message}'));
+          }
         },
-        codeSent: (String verificationId, int? resendToken) {
+        codeSent: (String verificationId, int? resendToken) async {
           print('SMS code sent. VerificationId: $verificationId');
-          emit(OtpSentState(
-            verificationId: verificationId,
-            resendToken: resendToken,
-          ));
+          if (!emit.isDone) {
+            emit(OtpSentState(
+              verificationId: verificationId,
+              resendToken: resendToken,
+            ));
+          }
         },
-        codeAutoRetrievalTimeout: (String verificationId) {
+        codeAutoRetrievalTimeout: (String verificationId) async {
           print('Auto retrieval timeout');
-          emit(OtpSentState(
-            verificationId: verificationId,
-            resendToken: null,
-          ));
+          if (!emit.isDone) {
+            emit(OtpTimeoutState(
+              message:
+                  'Auto-retrieval timed out. Please enter the code manually.',
+              verificationId: verificationId,
+            ));
+          }
         },
-        timeout: const Duration(seconds: 120),
       );
     } catch (e) {
       print('Top level error: $e');
-      emit(OtpErrorState('Unexpected error occurred: ${e.toString()}'));
+      if (!emit.isDone) {
+        emit(OtpErrorState('Unexpected error occurred: ${e.toString()}'));
+      }
     }
   }
+
+  //
+  // Future<void> sendOtpEvent(
+  //   SendOtpEvent event,
+  //   Emitter<HomeState> emit,
+  // ) async {
+  //   try {
+  //     emit(OtpLoadingState());
+  //     phoneNumber = event.phoneNumber;
+  //
+  //     print('Attempting to verify phone number: $phoneNumber');
+  //
+  //     await FirebaseAuth.instance.verifyPhoneNumber(
+  //       phoneNumber: '+91$phoneNumber',
+  //       verificationCompleted: (PhoneAuthCredential credential) async {
+  //         try {
+  //           print('Auto-verification in progress');
+  //           final userCredential =
+  //               await FirebaseAuth.instance.signInWithCredential(credential);
+  //           print('User signed in: ${userCredential.user?.uid}');
+  //
+  //           final prefs = await SharedPreferences.getInstance();
+  //           await prefs.setString('pn', phoneNumber);
+  //
+  //           emit(OtpVerifiedState());
+  //         } catch (e) {
+  //           print('Auto-verification error: $e');
+  //           phoneNumber = '';
+  //           emit(OtpErrorState('Auto-verification failed: ${e.toString()}'));
+  //         }
+  //       },
+  //       verificationFailed: (FirebaseAuthException ex) {
+  //         print('Verification failed with code: ${ex.code}');
+  //       },
+  //       codeSent: (String verificationId, int? resendToken) {
+  //         print('SMS code sent. VerificationId: $verificationId');
+  //         emit(OtpSentState(
+  //           verificationId: verificationId,
+  //           resendToken: resendToken,
+  //         ));
+  //       },
+  //       codeAutoRetrievalTimeout: (String verificationId) {
+  //         print('Auto retrieval timeout');
+  //         emit(OtpSentState(
+  //           verificationId: verificationId,
+  //           resendToken: null,
+  //         ));
+  //       },
+  //     );
+  //   } catch (e) {
+  //     print('Top level error: $e');
+  //     emit(OtpErrorState('Unexpected error occurred: ${e.toString()}'));
+  //   }
+  // }
 
   Future<void> verifyOtpEvent(
     VerifyOtpEvent event,
