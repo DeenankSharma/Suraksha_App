@@ -19,6 +19,7 @@ class HomeScreen extends StatelessWidget {
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(60),
         child: AppBar(
+          iconTheme: IconThemeData(color: Colors.white),
           backgroundColor:
               const Color.fromARGB(255, 0, 56, 147).withOpacity(0.9),
           elevation: 0,

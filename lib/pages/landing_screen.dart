@@ -6,9 +6,9 @@ class LandingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryBlue = Color.fromARGB(255, 0, 56, 147);  
+    const primaryBlue = Color.fromARGB(255, 0, 56, 147);
     final screenHeight = MediaQuery.of(context).size.height;
-    
+
     return Scaffold(
       backgroundColor: primaryBlue,
       body: SafeArea(
@@ -50,22 +50,22 @@ class LandingScreen extends StatelessWidget {
                 Text(
                   'Suraksha',
                   style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                    fontSize: screenHeight * 0.06,
-                    letterSpacing: 1.2,
-                  ),
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: screenHeight * 0.06,
+                        letterSpacing: 1.2,
+                      ),
                 ),
                 SizedBox(height: screenHeight * 0.02),
                 Text(
                   'Your Safety, Our Concern',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: Colors.white.withOpacity(0.9),
-                    fontWeight: FontWeight.w400,
-                    fontSize: screenHeight * 0.024,
-                    letterSpacing: 0.5,
-                  ),
+                        color: Colors.white.withOpacity(0.9),
+                        fontWeight: FontWeight.w400,
+                        fontSize: screenHeight * 0.024,
+                        letterSpacing: 0.5,
+                      ),
                 ),
                 const Spacer(flex: 3),
                 Container(
@@ -84,7 +84,7 @@ class LandingScreen extends StatelessWidget {
                     height: screenHeight * 0.07,
                     child: ElevatedButton(
                       onPressed: () {
-                        GoRouter.of(context).push('/login');
+                        context.go('/login');
                       },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.white,

@@ -4,10 +4,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_setup/bloc/home_bloc.dart';
 import 'package:go_router/go_router.dart';
 
-class LoginWithOtpScreen extends StatelessWidget {
-  LoginWithOtpScreen({super.key});
+class OtpVerificationScreen extends StatelessWidget {
+  OtpVerificationScreen({super.key});
 
-  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _otpController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -19,40 +19,14 @@ class LoginWithOtpScreen extends StatelessWidget {
       body: SafeArea(
           child: BlocConsumer(
         listener: (context, state) {
-          if (state is OtpSentState) {
-            context.go('/otp');
-          } else if (state is OtpVerifiedState) {
+          if (state is OtpVerifiedState) {
             context.go('/home');
           } else if (state is OtpErrorState) {
-            context.go('/');
+            context.go('/login');
           }
         },
         builder: (context, state) {
-          if (state is OtpLoadingState) {
-            return Container(
-              height: MediaQuery.of(context).size.height,
-              width: MediaQuery.of(context).size.width,
-              color: Colors.white,
-              child: Center(
-                child: CircularProgressIndicator(
-                  color: const Color.fromARGB(255, 106, 206, 245),
-                ),
-              ),
-            );
-          } else if (state is OtpErrorState) {
-            return Container(
-              height: MediaQuery.of(context).size.height,
-              width: MediaQuery.of(context).size.width,
-              color: Colors.white,
-              child: Center(
-                  child: Text("Error Verifying Phone Number",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 25,
-                        color: const Color.fromARGB(255, 106, 206, 245),
-                      ))),
-            );
-          } else {
+          if (state is OtpSentState) {
             return Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -72,9 +46,13 @@ class LoginWithOtpScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SizedBox(height: screenHeight * 0.05),
+                      IconButton(
+                        icon: const Icon(Icons.arrow_back, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
                       SizedBox(height: screenHeight * 0.05),
                       Text(
-                        'Enter your\nphone number',
+                        'Enter\nVerification Code',
                         style: Theme.of(context)
                             .textTheme
                             .headlineMedium
@@ -86,7 +64,7 @@ class LoginWithOtpScreen extends StatelessWidget {
                       ),
                       SizedBox(height: screenHeight * 0.02),
                       Text(
-                        "We'll send you a one-time verification code",
+                        'Enter the 6-digit code we sent to your phone',
                         style:
                             Theme.of(context).textTheme.titleMedium?.copyWith(
                                   color: Colors.white.withOpacity(0.9),
@@ -107,32 +85,24 @@ class LoginWithOtpScreen extends StatelessWidget {
                           ],
                         ),
                         child: TextFormField(
-                          controller: _phoneController,
-                          keyboardType: TextInputType.phone,
-                          style: const TextStyle(fontSize: 18),
+                          controller: _otpController,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 8,
+                          ),
                           inputFormatters: [
-                            LengthLimitingTextInputFormatter(10),
+                            LengthLimitingTextInputFormatter(6),
                             FilteringTextInputFormatter.digitsOnly,
                           ],
                           decoration: InputDecoration(
-                            prefixIcon: const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16.0),
-                              child: Text(
-                                '+91',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            prefixIconConstraints: const BoxConstraints(
-                              minWidth: 0,
-                              minHeight: 0,
-                            ),
-                            hintText: 'Phone Number',
+                            hintText: '------',
                             hintStyle: TextStyle(
                               color: Colors.grey[400],
-                              fontSize: 16,
+                              fontSize: 24,
+                              letterSpacing: 8,
                             ),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(16),
@@ -144,13 +114,27 @@ class LoginWithOtpScreen extends StatelessWidget {
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter your phone number';
+                              return 'Please enter the verification code';
                             }
-                            if (value.length != 10) {
-                              return 'Please enter a valid 10-digit phone number';
+                            if (value.length != 6) {
+                              return 'Please enter a valid 6-digit code';
                             }
                             return null;
                           },
+                        ),
+                      ),
+                      SizedBox(height: screenHeight * 0.04),
+                      TextButton(
+                        onPressed: () {
+                          context.go('/');
+                        },
+                        child: Text(
+                          'Resend Code',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
                       ),
                       const Spacer(),
@@ -171,10 +155,11 @@ class LoginWithOtpScreen extends StatelessWidget {
                           child: ElevatedButton(
                             onPressed: () {
                               if (_formKey.currentState!.validate()) {
+                                // Scaffold.of(context).
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(
-                                      'Waiting',
+                                      'Verifying ...',
                                       style: TextStyle(
                                           color: Colors.white,
                                           fontWeight: FontWeight.w500),
@@ -182,9 +167,9 @@ class LoginWithOtpScreen extends StatelessWidget {
                                     backgroundColor: Color(0xFF6ACEF5),
                                   ),
                                 );
-                                context.read<HomeBloc>().add(SendOtpEvent(
-                                    phoneNumber:
-                                        _phoneController.text.toString()));
+                                context.read<HomeBloc>().add(VerifyOtpEvent(
+                                    verificationId: state.verificationId,
+                                    otp: _otpController.text.toString()));
                               }
                             },
                             style: ElevatedButton.styleFrom(
@@ -196,7 +181,7 @@ class LoginWithOtpScreen extends StatelessWidget {
                               elevation: 0,
                             ),
                             child: const Text(
-                              'Get OTP',
+                              'Verify',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -212,6 +197,8 @@ class LoginWithOtpScreen extends StatelessWidget {
                 ),
               ),
             );
+          } else {
+            return Container();
           }
         },
       )),

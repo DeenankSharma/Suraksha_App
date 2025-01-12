@@ -29,7 +29,7 @@ class Navigation_Drawer extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'John Doe',
+                        'Deenank Sharma',
                         style: Theme.of(context)
                             .textTheme
                             .headlineMedium
@@ -40,7 +40,7 @@ class Navigation_Drawer extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'john.doe@example.com',
+                        'sharmadeenank@gmail.com',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Colors.white70,
                             ),
