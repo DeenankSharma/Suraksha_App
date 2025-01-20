@@ -24,13 +24,13 @@ class ContactsErrorState extends HomeState {
 class OtpLoadingState extends HomeState {}
 
 class OtpSentState extends HomeState {
-  // final String verificationId;
-  // final int? resendToken;
+  final String verificationId;
+  final int? resendToken;
 
-  // OtpSentState({
-  //   // required this.verificationId,
-  //   // this.resendToken,
-  // });
+  OtpSentState({
+    required this.verificationId,
+    this.resendToken,
+  });
 }
 
 class OtpVerifiedState extends HomeState {}
@@ -72,3 +72,17 @@ class LogsErrorState extends HomeState {
 }
 
 class LogsLoadingState extends HomeState {}
+
+class ProfileUpdatedState extends HomeState {
+  final bool isEditing;
+  final String email;
+  final String address;
+
+  ProfileUpdatedState(this.isEditing, this.email, this.address);
+}
+
+class ProfileErrorState extends HomeState {
+  final String error;
+
+  ProfileErrorState(this.error);
+}

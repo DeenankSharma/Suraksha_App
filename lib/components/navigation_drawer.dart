@@ -131,7 +131,7 @@ class Navigation_Drawer extends StatelessWidget {
                     isSelected: select == 4,
                     onTap: () {
                       context.read<HomeBloc>().add(OpenSettingsEvent());
-                      context.go('/settings');
+                      context.go('/profile');
                     },
                   ),
                 ],

@@ -1,5 +1,6 @@
 import 'package:bloc/bloc.dart';
 import 'package:fast_contacts/fast_contacts.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_setup/data/services/apis.dart';
 import 'package:flutter_setup/utils/get_location.dart';
 import 'package:location/location.dart';
@@ -23,6 +24,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<HelpFormSubmittedEvent>(helpFormSubmission);
     on<GetContactLogsEvent>(onFetchLogs);
     on<OpenSettingsEvent>(openSettings);
+    on<UpdateProfileEvent>(updateProfile);
   }
 
   Future<void> openSettings(
@@ -114,11 +116,33 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       print("hogya");
       await prefs.setString('pn', phoneNumber);
       print("hogya emit");
-      emit(OtpVerifiedState());
-      print("hogya emit yo");
+      // emit(OtpVerifiedState());
+      // print("hogya emit yo");
       final String? phone_number = prefs.getString('pn');
       print("yeh save hua tha");
       print(phone_number);
+      emit(OtpVerifiedState());
+
+      // await FirebaseAuth.instance.verifyPhoneNumber(
+      //   phoneNumber: '+91$phoneNumber',
+      //   verificationCompleted: (PhoneAuthCredential credential) async {
+      //     print('Auto-verification in progress');
+      //     final userCredential =
+      //         await FirebaseAuth.instance.signInWithCredential(credential);
+      //     print('User signed in: ${userCredential.user?.uid}');
+      //     emit(OtpVerifiedState());
+      //   },
+      //   verificationFailed: (FirebaseAuthException e) {
+      //     emit(OtpErrorState(e.message.toString()));
+      //   },
+      //   codeSent: (String verificationId, int? resendToken) {
+      //     emit(OtpSentState(verificationId: verificationId));
+      //   },
+      //   codeAutoRetrievalTimeout: (String verificationId) {
+      //     emit(OtpTimeoutState(
+      //         message: 'Auto-retrieval timed out', verificationId: verificationId));
+      //   },
+      // );
 
       // emit(OtpSentState(verificationId: verificationId))
       // await FirebaseAuth.instance.verifyPhoneNumber(
@@ -239,19 +263,19 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   // ) async {
   //   try {
   //     emit(OtpLoadingState());
-  //
+  
   //     PhoneAuthCredential credential = PhoneAuthProvider.credential(
   //       verificationId: event.verificationId,
   //       smsCode: event.otp,
   //     );
-  //
+  
   //     await FirebaseAuth.instance.signInWithCredential(credential);
   //     final SharedPreferences prefs = await SharedPreferences.getInstance();
   //     await prefs.setString('pn', phoneNumber);
   //     emit(OtpVerifiedState());
   //   } on FirebaseAuthException catch (e) {
   //     String errorMessage;
-  //
+  
   //     switch (e.code) {
   //       case 'invalid-verification-code':
   //         errorMessage = 'Invalid OTP. Please try again.';
@@ -262,7 +286,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   //       default:
   //         errorMessage = 'Verification failed: ${e.message}';
   //     }
-  //
+  
   //     emit(OtpErrorState(errorMessage));
   //   } catch (e) {
   //     emit(OtpErrorState('Unexpected error occurred: ${e.toString()}'));
@@ -497,6 +521,25 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         'contacts': [],
         'count': 0,
       };
+    }
+  }
+
+  Future<void> updateProfile(
+    UpdateProfileEvent event,
+    Emitter<HomeState> emit,
+  ) async {
+    try {
+      if (event.isEditing) {
+        final ApiService api = ApiService();
+        final response = await api.updateProfile(
+            email: event.email!, address: event.address!);
+        emit(ProfileUpdatedState(!event.isEditing, event.email!, event.address!));
+      } else {
+        emit(ProfileUpdatedState(!event.isEditing, event.email!, event.address!));
+      }
+    } catch (e) {
+      print("error in updating profile");
+      emit(ProfileErrorState(e.toString()));
     }
   }
 }
