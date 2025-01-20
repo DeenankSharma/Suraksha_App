@@ -12,51 +12,44 @@ class LoginWithOtpScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    HomeBloc homeBloc = HomeBloc();
     const primaryBlue = Color.fromARGB(255, 0, 56, 147);
     final screenHeight = MediaQuery.of(context).size.height;
-    return Scaffold(
-      backgroundColor: primaryBlue,
-      body: SafeArea(
-          child: BlocConsumer(
-        bloc: homeBloc,
-        listener: (context, state) {
-          if (state is OtpSentState) {
-            print("navigating to otp screen");
-            context.go('/otp');
-          } else if (state is OtpVerifiedState) {
-            context.go('/home');
-          } else if (state is OtpErrorState) {
-            context.go('/');
-          }
-        },
-        builder: (context, state) {
-          if (state is OtpLoadingState) {
-            return Container(
-              height: MediaQuery.of(context).size.height,
-              width: MediaQuery.of(context).size.width,
-              color: Colors.white,
-              child: Center(
-                child: CircularProgressIndicator(
+
+    return BlocConsumer<HomeBloc, HomeState>(
+      listener: (context, state) {
+        if (state is OtpVerifiedState) {
+          print("navigating to home screen");
+          context.go('/home');
+        }
+      },
+      builder: (context, state) {
+        if (state is OtpLoadingState) {
+          return const Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(
+                color: Color.fromARGB(255, 106, 206, 245),
+              ),
+            ),
+          );
+        } else if (state is OtpErrorState) {
+          return Scaffold(
+            body: Center(
+              child: Text(
+                "Error Verifying Phone Number",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 25,
                   color: const Color.fromARGB(255, 106, 206, 245),
                 ),
               ),
-            );
-          } else if (state is OtpErrorState) {
-            return Container(
-              height: MediaQuery.of(context).size.height,
-              width: MediaQuery.of(context).size.width,
-              color: Colors.white,
-              child: Center(
-                  child: Text("Error Verifying Phone Number",
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 25,
-                        color: const Color.fromARGB(255, 106, 206, 245),
-                      ))),
-            );
-          } else {
-            return Container(
+            ),
+          );
+        }
+
+        return Scaffold(
+          backgroundColor: primaryBlue,
+          body: SafeArea(
+            child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
@@ -173,23 +166,27 @@ class LoginWithOtpScreen extends StatelessWidget {
                           height: screenHeight * 0.07,
                           child: ElevatedButton(
                             onPressed: () {
-                              if (_formKey.currentState!.validate()) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text(
-                                      'Waiting',
-                                      style: TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w500),
-                                    ),
-                                    backgroundColor: Color(0xFF6ACEF5),
-                                  ),
-                                );
-                                context.read<HomeBloc>().add(SendOtpEvent(
-                                    phoneNumber:
-                                        _phoneController.text.toString()));
-                              }
+                              context.read<HomeBloc>().add(SendOtpEvent(
+                                  phoneNumber: _phoneController.text));
                             },
+                            // onPressed: () {
+                            //   if (_formKey.currentState!.validate()) {
+                            //     ScaffoldMessenger.of(context).showSnackBar(
+                            //       const SnackBar(
+                            //         content: Text(
+                            //           'Waiting',
+                            //           style: TextStyle(
+                            //             color: Colors.white,
+                            //             fontWeight: FontWeight.w500,
+                            //           ),
+                            //         ),
+                            //         backgroundColor: Color(0xFF6ACEF5),
+                            //       ),
+                            //     );
+                            //     context.read<HomeBloc>().add(SendOtpEvent(
+                            //         phoneNumber: _phoneController.text));
+                            //   }
+                            // },
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.white,
                               foregroundColor: primaryBlue,
@@ -199,7 +196,7 @@ class LoginWithOtpScreen extends StatelessWidget {
                               elevation: 0,
                             ),
                             child: const Text(
-                              'Get OTP',
+                              'Continue',
                               style: TextStyle(
                                 fontSize: 18,
                                 fontWeight: FontWeight.w600,
@@ -214,10 +211,10 @@ class LoginWithOtpScreen extends StatelessWidget {
                   ),
                 ),
               ),
-            );
-          }
-        },
-      )),
+            ),
+          ),
+        );
+      },
     );
   }
 }

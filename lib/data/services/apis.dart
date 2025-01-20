@@ -1,9 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiService {
   final Dio _dio = Dio();
-  final String baseUrl = dotenv.env['BASE_URL'].toString();
+  final String baseUrl = "https://39c5-103-37-201-221.ngrok-free.app";
 
   ApiService() {
     _dio.options.baseUrl = baseUrl;
@@ -13,14 +12,12 @@ class ApiService {
     required String phoneNumber,
     required double longitude,
     required double latitude,
-    // required String city,
   }) async {
     try {
       final response = await _dio.post('/emergency', data: {
         'phoneNumber': phoneNumber,
         'longitude': longitude,
         'latitude': latitude,
-        // 'city': city,
       });
       return response.data;
     } on DioException catch (e) {
@@ -63,7 +60,6 @@ class ApiService {
         'area': area,
         'landmark': landmark,
         'description': description,
-        // 'city': city,
       });
       return response.data;
     } on DioException catch (e) {

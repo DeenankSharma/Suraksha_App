@@ -52,7 +52,7 @@ class Navigation_Drawer extends StatelessWidget {
                     ),
                     child: const CircleAvatar(
                       radius: 40,
-                      backgroundImage: AssetImage("assets/image.jpg"),
+                      // backgroundImage: AssetImage("assets/image.jpg"),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -61,7 +61,7 @@ class Navigation_Drawer extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Deenank Sharma',
+                        'Satoshi',
                         style: Theme.of(context)
                             .textTheme
                             .headlineMedium
@@ -79,7 +79,7 @@ class Navigation_Drawer extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'sharmadeenank@gmail.com',
+                        'email',
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Colors.white.withOpacity(0.9),
                             ),
@@ -120,7 +120,7 @@ class Navigation_Drawer extends StatelessWidget {
                       context.go('/manage_contacts');
                     },
                   ),
-                  const SizedBox(height: 260),
+                  const SizedBox(height: 340),
                   Container(
                     margin: const EdgeInsets.symmetric(horizontal: 16),
                     child: const Divider(color: Colors.white54, thickness: 1),

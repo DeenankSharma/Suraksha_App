@@ -97,10 +97,14 @@ class LandingScreen extends StatelessWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.phone_android, size: 24),
+                          const Icon(
+                            Icons.phone_android,
+                            size: 24,
+                            color: Color.fromARGB(255, 0, 56, 147),
+                          ),
                           const SizedBox(width: 12),
                           Text(
-                            'Login with OTP',
+                            'Login',
                             style: TextStyle(
                               fontSize: screenHeight * 0.022,
                               fontWeight: FontWeight.w600,
