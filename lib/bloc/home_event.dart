@@ -47,3 +47,12 @@ class HelpFormSubmittedEvent extends HomeEvent {
 class GetContactLogsEvent extends HomeEvent {}
 
 class OpenSettingsEvent extends HomeEvent {}
+
+class UpdateProfileEvent extends HomeEvent {
+  final String? email;
+  final String? address;
+  final bool isEditing;
+
+  UpdateProfileEvent(
+      {this.email, this.address, required this.isEditing});
+}

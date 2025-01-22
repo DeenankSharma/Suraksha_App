@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 
 class ApiService {
   final Dio _dio = Dio();
-  final String baseUrl = "https://39c5-103-37-201-221.ngrok-free.app";
+  final String baseUrl = "https://d884-103-37-201-167.ngrok-free.app";
 
   ApiService() {
     _dio.options.baseUrl = baseUrl;
@@ -129,6 +129,24 @@ class ApiService {
         'lat': latitude,
         'long': longitude,
       });
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> updateProfile({
+    required String email,
+    required String address,
+  }) async {
+    try {
+      print("updating profile");
+      final response = await _dio.post('/save_settings',
+          data: ({
+        'email': email,
+        'address': address,
+      }));
+      print(response.data);
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
