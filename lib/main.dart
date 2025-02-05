@@ -4,10 +4,9 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_setup/bloc/home_bloc.dart';
 import 'package:flutter_setup/router/router_config.dart';
 import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+void main() {
   runApp(const MyApp());
 }
 
@@ -16,16 +15,31 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: [
-        Provider<HomeBloc>(create: (context) => HomeBloc()),
-      ],
-      child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        theme:
-            ThemeData(primaryColor: const Color.fromARGB(255, 106, 206, 245)),
-        routerConfig: AppRouter.router,
-      ),
+    return FutureBuilder<GoRouter>(
+      future: AppRouter.initializeRouter(),
+      builder: (context, snapshot) {
+        if (snapshot.hasData) {
+          return MultiProvider(
+            providers: [
+              Provider<HomeBloc>(create: (context) => HomeBloc()),
+            ],
+            child: MaterialApp.router(
+              debugShowCheckedModeBanner: false,
+              theme: ThemeData(
+                  primaryColor: const Color.fromARGB(255, 106, 206, 245)),
+              routerConfig: snapshot.data,
+            ),
+          );
+        }
+
+        return const MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: CircularProgressIndicator(),
+            ),
+          ),
+        );
+      },
     );
   }
 }
