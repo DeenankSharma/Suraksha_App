@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:bloc/bloc.dart';
 import 'package:fast_contacts/fast_contacts.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -18,7 +20,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<AddContactEvent>(addContactEvent);
     on<RemoveContactEvent>(removeContactEvent);
     on<SendOtpEvent>(sendOtpEvent);
-    // on<VerifyOtpEvent>(verifyOtpEvent);
+    on<VerifyOtpEvent>(verifyOtpEvent);
     on<HomeScreenEvent>(bringBacktoHomeScreen);
     on<HelpButtonClickedEvent>(callForEmergencyHelp);
     on<HelpFormSubmittedEvent>(helpFormSubmission);
@@ -107,229 +109,74 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     Emitter<HomeState> emit,
   ) async {
     try {
-      // emit(OtpLoadingState());
+      emit(OtpLoadingState());
       phoneNumber = event.phoneNumber;
-
-      print('Attempting to verify phone number: $phoneNumber');
-
+      log('Attempting to verify phone number: $phoneNumber');
       final prefs = await SharedPreferences.getInstance();
-      print("hogya");
       await prefs.setString('pn', phoneNumber);
-      print("hogya emit");
-      // emit(OtpVerifiedState());
-      // print("hogya emit yo");
-      final String? phone_number = prefs.getString('pn');
-      print("yeh save hua tha");
-      print(phone_number);
-      emit(OtpVerifiedState());
-
-      // await FirebaseAuth.instance.verifyPhoneNumber(
-      //   phoneNumber: '+91$phoneNumber',
-      //   verificationCompleted: (PhoneAuthCredential credential) async {
-      //     print('Auto-verification in progress');
-      //     final userCredential =
-      //         await FirebaseAuth.instance.signInWithCredential(credential);
-      //     print('User signed in: ${userCredential.user?.uid}');
-      //     emit(OtpVerifiedState());
-      //   },
-      //   verificationFailed: (FirebaseAuthException e) {
-      //     emit(OtpErrorState(e.message.toString()));
-      //   },
-      //   codeSent: (String verificationId, int? resendToken) {
-      //     emit(OtpSentState(verificationId: verificationId));
-      //   },
-      //   codeAutoRetrievalTimeout: (String verificationId) {
-      //     emit(OtpTimeoutState(
-      //         message: 'Auto-retrieval timed out', verificationId: verificationId));
-      //   },
-      // );
-
-      // emit(OtpSentState(verificationId: verificationId))
-      // await FirebaseAuth.instance.verifyPhoneNumber(
-      //   phoneNumber: '+91$phoneNumber',
-      //   timeout: const Duration(seconds: 60),
-      //   verificationCompleted: (PhoneAuthCredential credential) async {
-      //     try {
-      //       print('Auto-verification in progress');
-      //       final userCredential =
-      //           await FirebaseAuth.instance.signInWithCredential(credential);
-      //       print('User signed in: ${userCredential.user?.uid}');
-      //
-      //       final prefs = await SharedPreferences.getInstance();
-      //       await prefs.setString('pn', phoneNumber);
-      //
-      //       if (!emit.isDone) {
-      //         emit(OtpVerifiedState());
-      //       }
-      //     } catch (e) {
-      //       print('Auto-verification error: $e');
-      //       phoneNumber = '';
-      //       if (!emit.isDone) {
-      //         emit(OtpErrorState('Auto-verification failed: ${e.toString()}'));
-      //       }
-      //     }
-      //   },
-      //   verificationFailed: (FirebaseAuthException ex) {
-      //     print('Verification failed with code: ${ex.code}');
-      //     if (!emit.isDone) {
-      //       emit(OtpErrorState('Verification failed: ${ex.message}'));
-      //     }
-      //   },
-      //   codeSent: (String verificationId, int? resendToken) async {
-      //     print('SMS code sent. VerificationId: $verificationId');
-      //     if (!emit.isDone) {
-      //       emit(OtpSentState(
-      //         verificationId: verificationId,
-      //         resendToken: resendToken,
-      //       ));
-      //     }
-      //   },
-      //   codeAutoRetrievalTimeout: (String verificationId) async {
-      //     print('Auto retrieval timeout');
-      //     if (!emit.isDone) {
-      //       emit(OtpTimeoutState(
-      //         message:
-      //             'Auto-retrieval timed out. Please enter the code manually.',
-      //         verificationId: verificationId,
-      //       ));
-      //     }
-      //   },
-      // );
+      final apiService = ApiService();
+      final response = await apiService.loginUser(phoneNumber);
+      log("Response in bloc.dart : ${response.toString()}");
+      emit(OtpSentState());
     } catch (e) {
-      print('Top level error: $e');
+      log('Top level error: $e');
       if (!emit.isDone) {
         emit(OtpErrorState('Unexpected error occurred: ${e.toString()}'));
       }
     }
   }
 
-  //
-  // Future<void> sendOtpEvent(
-  //   SendOtpEvent event,
-  //   Emitter<HomeState> emit,
-  // ) async {
-  //   try {
-  //     emit(OtpLoadingState());
-  //     phoneNumber = event.phoneNumber;
-  //
-  //     print('Attempting to verify phone number: $phoneNumber');
-  //
-  //     await FirebaseAuth.instance.verifyPhoneNumber(
-  //       phoneNumber: '+91$phoneNumber',
-  //       verificationCompleted: (PhoneAuthCredential credential) async {
-  //         try {
-  //           print('Auto-verification in progress');
-  //           final userCredential =
-  //               await FirebaseAuth.instance.signInWithCredential(credential);
-  //           print('User signed in: ${userCredential.user?.uid}');
-  //
-  //           final prefs = await SharedPreferences.getInstance();
-  //           await prefs.setString('pn', phoneNumber);
-  //
-  //           emit(OtpVerifiedState());
-  //         } catch (e) {
-  //           print('Auto-verification error: $e');
-  //           phoneNumber = '';
-  //           emit(OtpErrorState('Auto-verification failed: ${e.toString()}'));
-  //         }
-  //       },
-  //       verificationFailed: (FirebaseAuthException ex) {
-  //         print('Verification failed with code: ${ex.code}');
-  //       },
-  //       codeSent: (String verificationId, int? resendToken) {
-  //         print('SMS code sent. VerificationId: $verificationId');
-  //         emit(OtpSentState(
-  //           verificationId: verificationId,
-  //           resendToken: resendToken,
-  //         ));
-  //       },
-  //       codeAutoRetrievalTimeout: (String verificationId) {
-  //         print('Auto retrieval timeout');
-  //         emit(OtpSentState(
-  //           verificationId: verificationId,
-  //           resendToken: null,
-  //         ));
-  //       },
-  //     );
-  //   } catch (e) {
-  //     print('Top level error: $e');
-  //     emit(OtpErrorState('Unexpected error occurred: ${e.toString()}'));
-  //   }
-  // }
+  Future<void> verifyOtpEvent(
+    VerifyOtpEvent event,
+    Emitter<HomeState> emit,
+  ) async {
+    try {
+      emit(OtpLoadingState());
 
-  // Future<void> verifyOtpEvent(
-  //   VerifyOtpEvent event,
-  //   Emitter<HomeState> emit,
-  // ) async {
-  //   try {
-  //     emit(OtpLoadingState());
-  
-  //     PhoneAuthCredential credential = PhoneAuthProvider.credential(
-  //       verificationId: event.verificationId,
-  //       smsCode: event.otp,
-  //     );
-  
-  //     await FirebaseAuth.instance.signInWithCredential(credential);
-  //     final SharedPreferences prefs = await SharedPreferences.getInstance();
-  //     await prefs.setString('pn', phoneNumber);
-  //     emit(OtpVerifiedState());
-  //   } on FirebaseAuthException catch (e) {
-  //     String errorMessage;
-  
-  //     switch (e.code) {
-  //       case 'invalid-verification-code':
-  //         errorMessage = 'Invalid OTP. Please try again.';
-  //         break;
-  //       case 'invalid-verification-id':
-  //         errorMessage = 'Invalid verification. Please request new OTP.';
-  //         break;
-  //       default:
-  //         errorMessage = 'Verification failed: ${e.message}';
-  //     }
-  
-  //     emit(OtpErrorState(errorMessage));
-  //   } catch (e) {
-  //     emit(OtpErrorState('Unexpected error occurred: ${e.toString()}'));
-  //   }
-  // }
+      final otp = event.otp;
+      final apiService = ApiService();
+      final response = await apiService.verifyOtp(otp);
+      log("Response for otp verification : ${response.toString()}");
+      if (response['success']) {
+        log("OtpVerifiedState in bloc.dart");
+        emit(OtpVerifiedState());
+      } else {
+        log("OtpErrorState in bloc.dart");
+        emit(OtpErrorState(response['error']));
+      }
+    } on FirebaseAuthException catch (e) {
+      String errorMessage;
 
-  // Future<void> showContactsEvent(
-  //   ShowContactsEvent event,
-  //   Emitter<HomeState> emit,
-  // ) async {
-  //   try {
-  //     emit(ContactsLoadingState());
-  //
-  //     final result = await getContacts();
-  //
-  //     if (result['success']) {
-  //       emit(ContactsFetchedState(result['contacts']));
-  //     } else {
-  //       emit(ContactsErrorState(result['error'].toString()));
-  //     }
-  //   } catch (err) {
-  //     emit(ContactsErrorState(err.toString()));
-  //   }
-  // }
+      switch (e.code) {
+        case 'invalid-verification-code':
+          errorMessage = 'Invalid OTP. Please try again.';
+          break;
+        case 'invalid-verification-id':
+          errorMessage = 'Invalid verification. Please request new OTP.';
+          break;
+        default:
+          errorMessage = 'Verification failed: ${e.message}';
+      }
+
+      emit(OtpErrorState(errorMessage));
+    } catch (e) {
+      emit(OtpErrorState('Unexpected error occurred: ${e.toString()}'));
+    }
+  }
+
   Future<void> showContactsEvent(
     ShowContactsEvent event,
     Emitter<HomeState> emit,
   ) async {
     try {
       emit(ContactsLoadingState());
-      print('yeh rha main');
-      final deviceContacts = await getDeviceContacts();
-      print('yeh rha main');
-      final savedContacts = await getSavedContacts();
-
-      if (deviceContacts['success'] && savedContacts['success']) {
-        final processedContacts = processContacts(
-          deviceContacts['contacts'],
-          savedContacts['contacts'],
-        );
-        emit(ContactsFetchedState(processedContacts));
+  
+      final result = await getContacts();
+  
+      if (result['success']) {
+        emit(ContactsFetchedState(result['contacts']));
       } else {
-        emit(ContactsErrorState('Failed to fetch contacts'));
+        emit(ContactsErrorState(result['error'].toString()));
       }
     } catch (err) {
       emit(ContactsErrorState(err.toString()));
@@ -533,9 +380,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         final ApiService api = ApiService();
         final response = await api.updateProfile(
             email: event.email!, address: event.address!);
-        emit(ProfileUpdatedState(!event.isEditing, event.email!, event.address!));
+        emit(ProfileUpdatedState(
+            !event.isEditing, event.email!, event.address!));
       } else {
-        emit(ProfileUpdatedState(!event.isEditing, event.email!, event.address!));
+        emit(ProfileUpdatedState(
+            !event.isEditing, event.email!, event.address!));
       }
     } catch (e) {
       print("error in updating profile");

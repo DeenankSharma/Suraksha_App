@@ -24,7 +24,7 @@ class HomeScreen extends StatelessWidget {
           // } else {
           return Container(
             color: Colors.pink,
-          );
+          );  
           // }
         });
   }

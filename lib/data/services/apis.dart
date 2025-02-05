@@ -1,8 +1,10 @@
+import 'dart:developer';
+
 import 'package:dio/dio.dart';
 
 class ApiService {
   final Dio _dio = Dio();
-  final String baseUrl = "https://d884-103-37-201-167.ngrok-free.app";
+  final String baseUrl = "http://127.0.0.1:3000";
 
   ApiService() {
     _dio.options.baseUrl = baseUrl;
@@ -110,10 +112,12 @@ class ApiService {
   }
 
   Future<Map<String, dynamic>> loginUser(String phoneNumber) async {
+    log("Phone Number in apis.dart : $phoneNumber");
     try {
       final response = await _dio.post('/login', data: {
         'phoneNumber': phoneNumber,
       });
+      log("Response in apis.dart : ${response.data}");
       return response.data;
     } on DioException catch (e) {
       throw _handleError(e);
@@ -143,9 +147,9 @@ class ApiService {
       print("updating profile");
       final response = await _dio.post('/save_settings',
           data: ({
-        'email': email,
-        'address': address,
-      }));
+            'email': email,
+            'address': address,
+          }));
       print(response.data);
       return response.data;
     } on DioException catch (e) {
@@ -153,6 +157,16 @@ class ApiService {
     }
   }
 
+  Future<Map<String, dynamic>> verifyOtp(String otp) async {
+    try {
+      final response = await _dio.post('/verify_otp', data: {
+        'otp': otp,
+      });
+      return response.data;
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
   Exception _handleError(DioException e) {
     if (e.response != null) {
       return Exception(e.response?.data['error'] ?? 'Server error occurred');

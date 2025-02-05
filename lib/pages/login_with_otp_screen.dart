@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,6 +23,9 @@ class LoginWithOtpScreen extends StatelessWidget {
           print("navigating to home screen");
           context.go('/home');
         }
+        else if (state is OtpSentState) {
+          context.go('/otp');
+        }
       },
       builder: (context, state) {
         if (state is OtpLoadingState) {
@@ -32,14 +37,14 @@ class LoginWithOtpScreen extends StatelessWidget {
             ),
           );
         } else if (state is OtpErrorState) {
-          return Scaffold(
+          return const Scaffold(
             body: Center(
               child: Text(
                 "Error Verifying Phone Number",
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   fontSize: 25,
-                  color: const Color.fromARGB(255, 106, 206, 245),
+                  color: Color.fromARGB(255, 106, 206, 245),
                 ),
               ),
             ),
@@ -139,11 +144,36 @@ class LoginWithOtpScreen extends StatelessWidget {
                             contentPadding: const EdgeInsets.all(20),
                           ),
                           validator: (value) {
+                            log("value: $value");
                             if (value == null || value.isEmpty) {
-                              return 'Please enter your phone number';
+                              // return 'Please enter your phone number';
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  backgroundColor: Colors.red,
+                                  content: Text(
+                                    'Please enter a valid phone number',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              );
                             }
-                            if (value.length != 10) {
-                              return 'Please enter a valid 10-digit phone number';
+                            if (value?.length != 10) {
+                              // return 'Please enter a valid 10-digit phone number';
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  backgroundColor: Colors.red,
+                                  content: Text(
+                                    'Please enter a valid phone number',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                              );
                             }
                             return null;
                           },
@@ -166,8 +196,26 @@ class LoginWithOtpScreen extends StatelessWidget {
                           height: screenHeight * 0.07,
                           child: ElevatedButton(
                             onPressed: () {
-                              context.read<HomeBloc>().add(SendOtpEvent(
-                                  phoneNumber: _phoneController.text));
+                              log("phone number: ${_phoneController.text}");
+                              if (_formKey.currentState!.validate()) {
+                                if (_phoneController.text.length == 10) {
+                                  context.read<HomeBloc>().add(SendOtpEvent(
+                                      phoneNumber: _phoneController.text));
+                                } else {
+                                  // ScaffoldMessenger.of(context).showSnackBar(
+                                  //   const SnackBar(
+                                  //     backgroundColor: Colors.red,
+                                  //     content: Text(
+                                  //       'Please enter a valid phone number',
+                                  //       style: TextStyle(
+                                  //         color: Colors.white,
+                                  //         fontWeight: FontWeight.w500,
+                                  //       ),
+                                  //     ),
+                                  //   ),
+                                  // );
+                                }
+                              }
                             },
                             // onPressed: () {
                             //   if (_formKey.currentState!.validate()) {

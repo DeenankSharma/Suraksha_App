@@ -23,15 +23,7 @@ class ContactsErrorState extends HomeState {
 // OTP States
 class OtpLoadingState extends HomeState {}
 
-class OtpSentState extends HomeState {
-  final String verificationId;
-  final int? resendToken;
-
-  OtpSentState({
-    required this.verificationId,
-    this.resendToken,
-  });
-}
+class OtpSentState extends HomeState {}
 
 class OtpVerifiedState extends HomeState {}
 

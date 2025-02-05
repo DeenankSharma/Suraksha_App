@@ -22,13 +22,9 @@ class SendOtpEvent extends HomeEvent {
 }
 
 class VerifyOtpEvent extends HomeEvent {
-  final String verificationId;
   final String otp;
 
-  VerifyOtpEvent({
-    required this.verificationId,
-    required this.otp,
-  });
+  VerifyOtpEvent({required this.otp});
 }
 
 class HomeScreenEvent extends HomeEvent {}
