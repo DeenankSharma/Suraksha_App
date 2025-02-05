@@ -82,12 +82,16 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       final String pn = prefs.getString('pn')!;
+      log("pn: $pn");
       ApiService api = ApiService();
-      Map<String, dynamic>? _locationData = await getLocation();
-      api.logEmergency(
+      log("API service initialized");
+      Map<String, dynamic>? locationData = await getLocation();
+      log("Location data fetched");
+      final response = await api.logEmergency(
           phoneNumber: pn,
-          longitude: _locationData?['longitude'],
-          latitude: _locationData?['latitude']);
+          longitude: locationData?['longitude'],
+          latitude: locationData?['latitude']);
+      log("Response for emergency log : ${response.toString()}");
       emit(HelpRequestedState("emer"));
     } catch (er) {
       print(er);
