@@ -2,10 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_setup/bloc/home_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class Navigation_Drawer extends StatelessWidget {
+class Navigation_Drawer extends StatefulWidget {
   const Navigation_Drawer({super.key, required this.select});
   final int select;
+  
+  @override
+  State<Navigation_Drawer> createState() => _Navigation_DrawerState();
+}
+
+class _Navigation_DrawerState extends State<Navigation_Drawer> {
+  String userName = 'User';
+  String phoneNumber = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('user_name') ?? 'User';
+      final phone = prefs.getString('pn') ?? '';
+      
+      setState(() {
+        userName = name;
+        phoneNumber = phone.isNotEmpty ? '+91 $phone' : 'Phone not set';
+      });
+    } catch (e) {
+      print('Error loading user data: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final primaryBlue = const Color.fromARGB(255, 0, 56, 147);
@@ -50,9 +81,14 @@ class Navigation_Drawer extends StatelessWidget {
                         ),
                       ],
                     ),
-                    child: const CircleAvatar(
+                    child: CircleAvatar(
                       radius: 40,
-                      // backgroundImage: AssetImage("assets/image.jpg"),
+                      backgroundColor: Colors.white,
+                      child: Icon(
+                        Icons.person,
+                        size: 50,
+                        color: primaryBlue,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -61,7 +97,7 @@ class Navigation_Drawer extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Satoshi',
+                        userName,
                         style: Theme.of(context)
                             .textTheme
                             .headlineMedium
@@ -79,7 +115,7 @@ class Navigation_Drawer extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'email',
+                        phoneNumber,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                               color: Colors.white.withOpacity(0.9),
                             ),
@@ -96,7 +132,7 @@ class Navigation_Drawer extends StatelessWidget {
                   DrawerItem(
                     icon: Icons.home,
                     title: 'Home',
-                    isSelected: select == 1,
+                    isSelected: widget.select == 1,
                     onTap: () {
                       context.read<HomeBloc>().add(HomeScreenEvent());
                       context.go('/home');
@@ -105,7 +141,7 @@ class Navigation_Drawer extends StatelessWidget {
                   DrawerItem(
                     icon: Icons.history,
                     title: 'Previous Logs',
-                    isSelected: select == 2,
+                    isSelected: widget.select == 2,
                     onTap: () {
                       context.read<HomeBloc>().add(GetContactLogsEvent());
                       context.go('/contacts');
@@ -114,7 +150,7 @@ class Navigation_Drawer extends StatelessWidget {
                   DrawerItem(
                     icon: Icons.contacts,
                     title: 'Manage Contacts',
-                    isSelected: select == 3,
+                    isSelected: widget.select == 3,
                     onTap: () {
                       context.read<HomeBloc>().add(ShowContactsEvent());
                       context.go('/manage_contacts');
@@ -128,7 +164,7 @@ class Navigation_Drawer extends StatelessWidget {
                   DrawerItem(
                     icon: Icons.settings,
                     title: 'Settings',
-                    isSelected: select == 4,
+                    isSelected: widget.select == 4,
                     onTap: () {
                       context.read<HomeBloc>().add(OpenSettingsEvent());
                       context.go('/profile');

@@ -5,8 +5,22 @@ import 'package:flutter_setup/bloc/home_bloc.dart';
 
 import '../components/navigation_drawer.dart';
 
-class ContactsLog extends StatelessWidget {
+class ContactsLog extends StatefulWidget {
   const ContactsLog({super.key});
+
+  @override
+  State<ContactsLog> createState() => _ContactsLogState();
+}
+
+class _ContactsLogState extends State<ContactsLog> {
+  @override
+  void initState() {
+    super.initState();
+    // Load logs when the page is opened
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<HomeBloc>().add(GetContactLogsEvent());
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,8 +122,27 @@ class ContactsLog extends StatelessWidget {
     );
   }
 
-  Widget _buildLogsList(BuildContext context, List logs,
+  Widget _buildLogsList(BuildContext context, dynamic logsRaw,
       {bool isDetailed = false}) {
+    // Convert logs to proper type
+    List<Map<String, dynamic>> logs = [];
+    try {
+      if (logsRaw is List) {
+        logs = logsRaw.map((item) {
+          if (item is Map<String, dynamic>) {
+            return item;
+          } else if (item is Map) {
+            return Map<String, dynamic>.from(item);
+          } else {
+            return <String, dynamic>{};
+          }
+        }).toList();
+      }
+    } catch (e) {
+      print("Error processing logs: $e");
+      logs = [];
+    }
+
     if (logs.isEmpty) {
       return Center(
         child: Text(
@@ -184,7 +217,7 @@ class LogWidget extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    _formatDate(log['timestamp']),
+                    _formatDate(log['timestamp']?.toString() ?? ''),
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.black54,
@@ -194,7 +227,7 @@ class LogWidget extends StatelessWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                'Phone: ${log['phoneNumber']}',
+                'Phone: ${log['phoneNumber']?.toString() ?? 'Unknown'}',
                 style: TextStyle(
                   fontSize: 14,
                   color: Colors.black87,
@@ -203,16 +236,16 @@ class LogWidget extends StatelessWidget {
               if (isDetailed) ...[
                 const SizedBox(height: 8),
                 Text(
-                  'Area: ${log['area']}',
+                  'Area: ${log['area']?.toString() ?? 'Unknown'}',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.black87,
                   ),
                 ),
-                if (log['landmark'] != null) ...[
+                if (log['landmark'] != null && log['landmark'].toString().isNotEmpty) ...[
                   const SizedBox(height: 4),
                   Text(
-                    'Landmark: ${log['landmark']}',
+                    'Landmark: ${log['landmark']?.toString() ?? 'Unknown'}',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.black87,
@@ -221,7 +254,7 @@ class LogWidget extends StatelessWidget {
                 ],
                 const SizedBox(height: 8),
                 Text(
-                  'Description: ${log['description']}',
+                  'Description: ${log['description']?.toString() ?? 'No description'}',
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.black87,
@@ -239,7 +272,7 @@ class LogWidget extends StatelessWidget {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    '${log['latitude']}, ${log['longitude']}',
+                    '${log['latitude']?.toString() ?? 'N/A'}, ${log['longitude']?.toString() ?? 'N/A'}',
                     style: TextStyle(
                       fontSize: 13,
                       color: Colors.black54,
@@ -255,7 +288,15 @@ class LogWidget extends StatelessWidget {
   }
 
   String _formatDate(String timestamp) {
-    final date = DateTime.parse(timestamp);
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}';
+    if (timestamp.isEmpty) {
+      return 'Unknown Date';
+    }
+    
+    try {
+      final date = DateTime.parse(timestamp);
+      return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute}';
+    } catch (e) {
+      return 'Invalid Date';
+    }
   }
 }

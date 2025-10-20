@@ -149,22 +149,64 @@ class HomeScreen extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
               child: InkWell(
                 borderRadius: BorderRadius.circular(20),
-                onTap: () {
+                onTap: () async {
                   if (!isHelpRequested) {
+                    showDialog(
+                      context: context,
+                      barrierDismissible: false,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          content: Row(
+                            children: [
+                              CircularProgressIndicator(
+                                color: const Color.fromARGB(255, 0, 56, 147),
+                              ),
+                              const SizedBox(width: 20),
+                              Text('Sending emergency alert...'),
+                            ],
+                          ),
+                        );
+                      },
+                    );
+                    
                     context.read<HomeBloc>().add(HelpButtonClickedEvent());
-                  }
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        isHelpRequested
-                            ? 'Emergency help already requested'
-                            : 'Emergency help requested',
-                        style: const TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.w500),
+                    
+                    await Future.delayed(const Duration(seconds: 2));
+                    
+                    Navigator.of(context).pop();
+                    
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Row(
+                            children: [
+                              Icon(Icons.check_circle, color: Colors.green, size: 30),
+                              const SizedBox(width: 10),
+                              Text('Emergency Alert Sent'),
+                            ],
+                          ),
+                          content: Text(
+                            'Your emergency alert has been sent to all your emergency contacts. '
+                            'Help is on the way!',
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              child: Text('OK'),
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Emergency help already requested'),
+                        backgroundColor: Colors.orange,
                       ),
-                      backgroundColor: const Color(0xFF6ACEF5),
-                    ),
-                  );
+                    );
+                  }
                 },
                 child: Center(
                   child: Text(

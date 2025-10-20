@@ -47,24 +47,90 @@ class ContactWidget extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      contact['displayName'] ?? 'No Name',
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        color: Color.fromARGB(255, 0, 56, 147),
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            contact['displayName'] ?? 'No Name',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color.fromARGB(255, 0, 56, 147),
+                            ),
+                          ),
+                        ),
+                        if (contact['isManual'] == true)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.edit,
+                                  size: 12,
+                                  color: Colors.orange[600],
+                                ),
+                                const SizedBox(width: 2),
+                                Text(
+                                  'Manual',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.orange[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 4),
-                    Text(
-                      (contact['phones'] as List).isNotEmpty
-                          ? (contact['phones'] as List).first.toString()
-                          : 'No number',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black54,
-                        fontWeight: FontWeight.w400,
-                      ),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            (contact['phones'] as List).isNotEmpty
+                                ? (contact['phones'] as List).first.toString()
+                                : 'No number',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.black54,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                        ),
+                        if (contact['callCount'] != null && contact['callCount'] > 0)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.phone,
+                                  size: 12,
+                                  color: Colors.blue[600],
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  '${contact['callCount']}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.blue[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                   ],
                 ),
