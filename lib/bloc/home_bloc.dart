@@ -31,6 +31,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<GetContactLogsEvent>(onFetchLogs);
     on<OpenSettingsEvent>(openSettings);
     on<UpdateProfileEvent>(updateProfile);
+    on<LogoutEvent>(logoutEvent);
   }
 
   Future<void> openSettings(
@@ -48,10 +49,19 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       ApiService api = ApiService();
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String pn = prefs.getString('pn')!;
+      final String? pn = prefs.getString('pn');
+      
+      if (pn == null || pn.isEmpty) {
+        emit(LogsErrorState('Phone number not found. Please login again.'));
+        return;
+      }
+      
+      dev.log('Fetching logs for phone number: $pn');
       final logs = await api.getLogs(phoneNumber: pn);
+      dev.log('Logs fetched successfully: ${logs.toString()}');
       emit(LogsFetchedState(logs));
     } catch (e) {
+      dev.log('Error fetching logs: $e');
       emit(LogsErrorState(e.toString()));
     }
   }
@@ -209,6 +219,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('pn', phoneNumber);
       final apiService = ApiService();
+      dev.log('Sending login request for phone: $phoneNumber');
       final response = await apiService.loginUser(phoneNumber);
       dev.log("Response in bloc.dart : ${response.toString()}");
       emit(OtpSentState());
@@ -232,6 +243,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       
       final prefs = await SharedPreferences.getInstance();
       final pn = prefs.getString('pn') ?? phoneNumber;
+      
+      dev.log('Verifying OTP - Phone: $pn, OTP: $otp');
       
       final response = await apiService.verifyOtp(otp, pn);
       dev.log("Response for otp verification : ${response.toString()}");
@@ -699,6 +712,25 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     } catch (e) {
       print("error in updating profile");
       emit(ProfileErrorState(e.toString()));
+    }
+  }
+
+  Future<void> logoutEvent(
+    LogoutEvent event,
+    Emitter<HomeState> emit,
+  ) async {
+    try {
+      // Clear all stored user data
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.clear();
+      
+      // Emit logout state
+      emit(LogoutState());
+      
+      dev.log("User logged out successfully");
+    } catch (e) {
+      dev.log("Error during logout: $e");
+      emit(ProfileErrorState("Logout failed: ${e.toString()}"));
     }
   }
 }

@@ -52,3 +52,5 @@ class UpdateProfileEvent extends HomeEvent {
   UpdateProfileEvent(
       {this.email, this.address, required this.isEditing});
 }
+
+class LogoutEvent extends HomeEvent {}

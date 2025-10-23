@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 
 class ApiService {
   final Dio _dio = Dio();
-  final String baseUrl = "http://10.81.82.63:3000";
+  final String baseUrl = "http://laptopipaddress(cmd>>ipconfig - to get laptop ip):3000";
 
   ApiService() {
     _dio.options.baseUrl = baseUrl;

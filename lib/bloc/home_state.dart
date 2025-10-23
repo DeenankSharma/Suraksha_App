@@ -78,3 +78,5 @@ class ProfileErrorState extends HomeState {
 
   ProfileErrorState(this.error);
 }
+
+class LogoutState extends HomeState {}
