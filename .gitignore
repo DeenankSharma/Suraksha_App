@@ -47,3 +47,4 @@ app.*.map.json
 
 # Firebase
 /android/app/google-services.json
+Suraksha_app_backend

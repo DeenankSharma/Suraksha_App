@@ -1,9 +1,11 @@
 import 'dart:developer';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_setup/bloc/home_bloc.dart';
+import 'package:flutter_setup/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
 
 class OtpVerificationScreen extends StatelessWidget {
@@ -14,158 +16,173 @@ class OtpVerificationScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryBlue = Color.fromARGB(255, 0, 56, 147);
     final screenHeight = MediaQuery.of(context).size.height;
+
     return Scaffold(
-      backgroundColor: primaryBlue,
+      backgroundColor: AppTheme.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: Icon(
+            CupertinoIcons.back,
+            color: AppTheme.primary,
+          ),
+          onPressed: () => context.pop(),
+        ),
+      ),
       body: SafeArea(
-          child: BlocConsumer<HomeBloc, HomeState>(
-        listener: (context, state) {
-          log("Current state: $state");
-          if (state is OtpVerifiedState) {
-            log("OtpVerifiedState in otp_screen.dart");
-            context.go('/home');
-          } else if (state is OtpErrorState) {
-            log("OtpErrorState in otp_screen.dart");
-            context.go('/login');
-          }
-        },
-        builder: (context, state) {
-          log("Building with state: $state");
-          return Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  const Color.fromARGB(255, 106, 206, 245),
-                  const Color.fromARGB(255, 0, 56, 147).withOpacity(0.8),
-                ],
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24.0),
-              child: Form(
-                key: _formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: screenHeight * 0.05),
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => context.pop(),
-                    ),
-                    SizedBox(height: screenHeight * 0.05),
-                    Text(
-                      'Enter\nVerification Code',
-                      style:
-                          Theme.of(context).textTheme.headlineMedium?.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                height: 1.2,
-                              ),
-                    ),
-                    SizedBox(height: screenHeight * 0.02),
-                    Text(
-                      'Enter the 6-digit code we sent to your phone',
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: Colors.white.withOpacity(0.9),
-                            fontWeight: FontWeight.w400,
-                          ),
-                    ),
-                    SizedBox(height: screenHeight * 0.06),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: TextFormField(
-                        controller: _otpController,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 8,
-                        ),
-                        inputFormatters: [
-                          LengthLimitingTextInputFormatter(6),
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                        decoration: InputDecoration(
-                          hintText: '------',
-                          hintStyle: TextStyle(
-                            color: Colors.grey[400],
-                            fontSize: 24,
-                            letterSpacing: 8,
-                          ),
-                          border: OutlineInputBorder(
+        child: BlocConsumer<HomeBloc, HomeState>(
+          listener: (context, state) {
+            log("Current state: $state");
+            if (state is OtpVerifiedState) {
+              log("OtpVerifiedState in otp_screen.dart");
+              context.go('/home');
+            } else if (state is OtpErrorState) {
+              log("OtpErrorState in otp_screen.dart");
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  backgroundColor: AppTheme.error,
+                  content: const Text('Invalid OTP. Please try again.'),
+                ),
+              );
+            }
+          },
+          builder: (context, state) {
+            log("Building with state: $state");
+            return SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(height: screenHeight * 0.05),
+                      Center(
+                        child: Container(
+                          width: 80,
+                          height: 80,
+                          decoration: BoxDecoration(
+                            color: AppTheme.primary.withOpacity(0.1),
                             borderRadius: BorderRadius.circular(16),
-                            borderSide: BorderSide.none,
                           ),
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.all(20),
+                          child: Icon(
+                            CupertinoIcons.lock_shield,
+                            size: 48,
+                            color: AppTheme.primary,
+                          ),
                         ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter the verification code';
-                          }
-                          if (value.length != 6) {
-                            return 'Please enter a valid 6-digit code';
-                          }
-                          return null;
-                        },
                       ),
-                    ),
-                    SizedBox(height: screenHeight * 0.04),
-                    TextButton(
-                      onPressed: () {
-                        context.go('/');
-                      },
-                      child: Text(
-                        'Resend Code',
+                      SizedBox(height: screenHeight * 0.04),
+                      Text(
+                        'Verification Code',
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.9),
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
+                          fontSize: 28,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textPrimary,
                         ),
                       ),
-                    ),
-                    const Spacer(),
-                    Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
+                      SizedBox(height: screenHeight * 0.01),
+                      Text(
+                        'Enter the 6-digit code we sent to your phone',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w400,
+                          color: AppTheme.textSecondary,
+                        ),
                       ),
-                      child: SizedBox(
+                      SizedBox(height: screenHeight * 0.05),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.accent),
+                        ),
+                        child: TextFormField(
+                          controller: _otpController,
+                          keyboardType: TextInputType.number,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 12,
+                            color: AppTheme.textPrimary,
+                          ),
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(6),
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
+                          decoration: InputDecoration(
+                            hintText: '------',
+                            hintStyle: TextStyle(
+                              color: AppTheme.textSecondary.withOpacity(0.3),
+                              fontSize: 24,
+                              letterSpacing: 12,
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            contentPadding: const EdgeInsets.all(20),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please enter the verification code';
+                            }
+                            if (value.length != 6) {
+                              return 'Please enter a valid 6-digit code';
+                            }
+                            return null;
+                          },
+                        ),
+                      ),
+                      SizedBox(height: screenHeight * 0.03),
+                      Center(
+                        child: TextButton(
+                          onPressed: () {
+                            context.go('/');
+                          },
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                CupertinoIcons.refresh,
+                                size: 18,
+                                color: AppTheme.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Resend Code',
+                                style: TextStyle(
+                                  color: AppTheme.primary,
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(height: screenHeight * 0.04),
+                      SizedBox(
                         width: double.infinity,
-                        height: screenHeight * 0.07,
+                        height: 56,
                         child: ElevatedButton(
                           onPressed: () {
                             if (_formKey.currentState!.validate()) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Verifying ...',
+                                SnackBar(
+                                  content: const Text(
+                                    'Verifying...',
                                     style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w500),
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w500,
+                                    ),
                                   ),
-                                  backgroundColor: Color(0xFF6ACEF5),
+                                  backgroundColor: AppTheme.primary,
                                 ),
                               );
                               context.read<HomeBloc>().add(VerifyOtpEvent(
@@ -173,10 +190,10 @@ class OtpVerificationScreen extends StatelessWidget {
                             }
                           },
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: primaryBlue,
+                            backgroundColor: AppTheme.primary,
+                            foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius: BorderRadius.circular(12),
                             ),
                             elevation: 0,
                           ),
@@ -185,20 +202,48 @@ class OtpVerificationScreen extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    SizedBox(height: screenHeight * 0.04),
-                  ],
+                      SizedBox(height: screenHeight * 0.03),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accent.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppTheme.accent.withOpacity(0.5),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              CupertinoIcons.checkmark_shield,
+                              color: AppTheme.primary,
+                              size: 20,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'Your verification code is valid for 10 minutes',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppTheme.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          );
-        },
-      )),
+            );
+          },
+        ),
+      ),
     );
   }
 }
