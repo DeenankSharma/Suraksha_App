@@ -5,6 +5,7 @@ import 'package:flutter_setup/pages/landing_screen.dart';
 import 'package:flutter_setup/pages/login_with_otp_screen.dart';
 import 'package:flutter_setup/pages/otp_screen.dart';
 import 'package:flutter_setup/pages/profile_page.dart';
+import 'package:flutter_setup/pages/setup_screen.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -52,6 +53,11 @@ class AppRouter {
           name: 'profile',
           builder: (context, state) => ProfilePage(),
         ),
+        GoRoute(
+          path: '/setup',
+          name: 'setup',
+          builder: (context, state) => const SetupScreen(),
+        ),
         // GoRoute(path: .)ute
       ],
     );
@@ -61,8 +67,12 @@ class AppRouter {
   static Future<String> _getInitialLocation() async {
     final prefs = await SharedPreferences.getInstance();
     final phoneNumber = prefs.getString('pn') ?? '';
-    if (phoneNumber.isNotEmpty) {
+    final setupCompleted = prefs.getBool('setup_completed') ?? false;
+    
+    if (phoneNumber.isNotEmpty && setupCompleted) {
       return '/home';
+    } else if (phoneNumber.isNotEmpty && !setupCompleted) {
+      return '/setup';
     }
     return '/';
   }

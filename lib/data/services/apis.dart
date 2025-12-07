@@ -4,7 +4,7 @@ import 'package:dio/dio.dart';
 
 class ApiService {
   final Dio _dio = Dio();
-  final String baseUrl = "http://127.0.0.1:3000";
+  final String baseUrl = "http://laptopipaddress(cmd>>ipconfig - to get laptop ip):3000";
 
   ApiService() {
     _dio.options.baseUrl = baseUrl;
@@ -32,9 +32,9 @@ class ApiService {
   }) async {
     try {
       final response1 = await _dio
-          .get('/get_logs', queryParameters: {"phone_number": phoneNumber});
+          .get('/get_logs', queryParameters: {"phoneNumber": phoneNumber});
       final response2 = await _dio.get('/get_detailed_logs',
-          queryParameters: {"phone_number": phoneNumber});
+          queryParameters: {"phoneNumber": phoneNumber});
       final response = {
         'logs': response1.data,
         'detailed_logs': response2.data
@@ -157,10 +157,11 @@ class ApiService {
     }
   }
 
-  Future<Map<String, dynamic>> verifyOtp(String otp) async {
+  Future<Map<String, dynamic>> verifyOtp(String otp, String phoneNumber) async {
     try {
       final response = await _dio.post('/verify_otp', data: {
         'otp': otp,
+        'phoneNumber': phoneNumber,
       });
       return response.data;
     } on DioException catch (e) {

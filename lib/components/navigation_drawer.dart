@@ -1,138 +1,255 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_setup/bloc/home_bloc.dart';
+import 'package:flutter_setup/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-class Navigation_Drawer extends StatelessWidget {
+class Navigation_Drawer extends StatefulWidget {
   const Navigation_Drawer({super.key, required this.select});
   final int select;
+
+  @override
+  State<Navigation_Drawer> createState() => _Navigation_DrawerState();
+}
+
+class _Navigation_DrawerState extends State<Navigation_Drawer> {
+  String userName = 'User';
+  String phoneNumber = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final name = prefs.getString('user_name') ?? 'User';
+      final phone = prefs.getString('pn') ?? '';
+
+      setState(() {
+        userName = name;
+        phoneNumber = phone.isNotEmpty ? '+91 $phone' : 'Phone not set';
+      });
+    } catch (e) {
+      print('Error loading user data: $e');
+    }
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: AppTheme.background,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            'Logout',
+            style: TextStyle(
+              color: AppTheme.textPrimary,
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to logout?',
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 16,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: AppTheme.textSecondary,
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.read<HomeBloc>().add(LogoutEvent());
+                context.go('/');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: const Text(
+                'Logout',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final primaryBlue = const Color.fromARGB(255, 0, 56, 147);
     return Drawer(
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              const Color.fromARGB(255, 106, 206, 245),
-              primaryBlue.withOpacity(0.8),
-            ],
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            DrawerHeader(
+      child: SafeArea(
+        top: false,
+        child: Container(
+          color: AppTheme.background,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+            Container(
+              padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
               decoration: BoxDecoration(
-                color: primaryBlue.withOpacity(0.8),
-                boxShadow: [
-                  BoxShadow(
-                    color:
-                        const Color.fromARGB(255, 0, 110, 255).withOpacity(0.3),
-                    blurRadius: 15,
-                    spreadRadius: 2,
-                  ),
-                ],
+                color: AppTheme.primaryDark,
               ),
-              child: Row(
+              child: Column(
                 children: [
                   Container(
+                    width: 80,
+                    height: 80,
                     decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.white, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.2),
-                          blurRadius: 8,
-                          spreadRadius: 2,
-                        ),
-                      ],
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
                     ),
-                    child: const CircleAvatar(
-                      radius: 40,
-                      // backgroundImage: AssetImage("assets/image.jpg"),
+                    child: Icon(
+                      CupertinoIcons.person_fill,
+                      size: 40,
+                      color: AppTheme.primary,
                     ),
                   ),
-                  const SizedBox(width: 16),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Satoshi',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineMedium
-                            ?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          shadows: [
-                            Shadow(
-                              color: Colors.black.withOpacity(0.3),
-                              offset: const Offset(0, 2),
-                              blurRadius: 4,
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'email',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                              color: Colors.white.withOpacity(0.9),
-                            ),
-                      ),
-                    ],
+                  const SizedBox(height: 16),
+                  Text(
+                    userName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    phoneNumber,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 14,
+                    ),
                   ),
                 ],
               ),
             ),
+            // Menu Items
             Expanded(
               child: ListView(
-                padding: EdgeInsets.zero,
+                padding: const EdgeInsets.symmetric(vertical: 8),
                 children: [
                   DrawerItem(
-                    icon: Icons.home,
+                    icon: CupertinoIcons.home,
                     title: 'Home',
-                    isSelected: select == 1,
+                    isSelected: widget.select == 1,
                     onTap: () {
                       context.read<HomeBloc>().add(HomeScreenEvent());
                       context.go('/home');
                     },
                   ),
                   DrawerItem(
-                    icon: Icons.history,
-                    title: 'Previous Logs',
-                    isSelected: select == 2,
+                    icon: CupertinoIcons.time,
+                    title: 'Activity Logs',
+                    isSelected: widget.select == 2,
                     onTap: () {
                       context.read<HomeBloc>().add(GetContactLogsEvent());
                       context.go('/contacts');
                     },
                   ),
                   DrawerItem(
-                    icon: Icons.contacts,
-                    title: 'Manage Contacts',
-                    isSelected: select == 3,
+                    icon: CupertinoIcons.person_2_fill,
+                    title: 'Emergency Contacts',
+                    isSelected: widget.select == 3,
                     onTap: () {
                       context.read<HomeBloc>().add(ShowContactsEvent());
                       context.go('/manage_contacts');
                     },
                   ),
-                  const SizedBox(height: 340),
-                  Container(
-                    margin: const EdgeInsets.symmetric(horizontal: 16),
-                    child: const Divider(color: Colors.white54, thickness: 1),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Divider(
+                      color: AppTheme.accent.withOpacity(0.5),
+                      thickness: 1,
+                    ),
                   ),
+                  const SizedBox(height: 8),
                   DrawerItem(
-                    icon: Icons.settings,
+                    icon: CupertinoIcons.settings,
                     title: 'Settings',
-                    isSelected: select == 4,
+                    isSelected: widget.select == 4,
                     onTap: () {
                       context.read<HomeBloc>().add(OpenSettingsEvent());
                       context.go('/profile');
                     },
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Divider(
+                      color: AppTheme.accent.withOpacity(0.5),
+                      thickness: 1,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  DrawerItem(
+                    icon: CupertinoIcons.square_arrow_right,
+                    title: 'Logout',
+                    isSelected: false,
+                    onTap: () {
+                      _showLogoutDialog(context);
+                    },
+                  ),
+                ],
+              ),
+            ),
+            // Footer
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(
+                    color: AppTheme.accent.withOpacity(0.3),
+                  ),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    CupertinoIcons.shield_lefthalf_fill,
+                    color: AppTheme.primary,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Suraksha',
+                    style: TextStyle(
+                      color: AppTheme.primary,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 1,
+                    ),
                   ),
                 ],
               ),
@@ -140,7 +257,7 @@ class Navigation_Drawer extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ));
   }
 }
 
@@ -161,19 +278,32 @@ class DrawerItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: isSelected ? Colors.white.withOpacity(0.2) : Colors.transparent,
+        color: isSelected
+            ? AppTheme.primary.withOpacity(0.1)
+            : Colors.transparent,
+        border: isSelected
+            ? Border.all(
+                color: AppTheme.primary.withOpacity(0.3),
+                width: 1,
+              )
+            : null,
       ),
       child: ListTile(
-        leading: Icon(icon, color: Colors.white),
+        leading: Icon(
+          icon,
+          color: isSelected ? AppTheme.primary : AppTheme.textSecondary,
+          size: 24,
+        ),
         title: Text(
           title,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.white,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
+          style: TextStyle(
+            color: isSelected ? AppTheme.primary : AppTheme.textPrimary,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+            fontSize: 16,
+          ),
         ),
         onTap: onTap,
         shape: RoundedRectangleBorder(

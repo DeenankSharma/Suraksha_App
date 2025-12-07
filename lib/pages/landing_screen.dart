@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_setup/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
 
 class LandingScreen extends StatelessWidget {
@@ -6,123 +8,156 @@ class LandingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const primaryBlue = Color.fromARGB(255, 0, 56, 147);
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      backgroundColor: primaryBlue,
+      backgroundColor: AppTheme.primaryDark,
       body: SafeArea(
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                const Color(0xFF6ACEF5),
-                const Color.fromARGB(255, 0, 56, 147).withOpacity(0.8),
-              ],
-            ),
+            color: AppTheme.primaryDark,
           ),
           child: Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: 24.0,
+              horizontal: 32.0,
               vertical: screenHeight * 0.05,
             ),
             child: Column(
               children: [
                 const Spacer(flex: 2),
                 Container(
-                  padding: const EdgeInsets.all(20),
+                  width: 120,
+                  height: 120,
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: Colors.white.withOpacity(0.2),
-                      width: 2,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.security,
-                    size: screenHeight * 0.1,
                     color: Colors.white,
-                  ),
-                ),
-                SizedBox(height: screenHeight * 0.05),
-                Text(
-                  'Suraksha',
-                  style: Theme.of(context).textTheme.displayLarge?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                        fontSize: screenHeight * 0.06,
-                        letterSpacing: 1.2,
-                      ),
-                ),
-                SizedBox(height: screenHeight * 0.02),
-                Text(
-                  'Your Safety, Our Concern',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        color: Colors.white.withOpacity(0.9),
-                        fontWeight: FontWeight.w400,
-                        fontSize: screenHeight * 0.024,
-                        letterSpacing: 0.5,
-                      ),
-                ),
-                const Spacer(flex: 3),
-                Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(24),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 20,
+                        spreadRadius: 2,
                       ),
                     ],
                   ),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: screenHeight * 0.07,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        context.go('/login');
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: primaryBlue,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        elevation: 0,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.phone_android,
-                            size: 24,
-                            color: Color.fromARGB(255, 0, 56, 147),
-                          ),
-                          const SizedBox(width: 12),
-                          Text(
-                            'Login',
-                            style: TextStyle(
-                              fontSize: screenHeight * 0.022,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                  child: Icon(
+                    CupertinoIcons.shield_lefthalf_fill,
+                    size: screenHeight * 0.08,
+                    color: AppTheme.primary,
+                  ),
+                ),
+                SizedBox(height: screenHeight * 0.06),
+                Text(
+                  'Suraksha',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w700,
+                    fontSize: screenHeight * 0.05,
+                    letterSpacing: 2,
+                  ),
+                ),
+                SizedBox(height: screenHeight * 0.02),
+                Text(
+                  'Your Safety, Our Priority',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppTheme.accent,
+                    fontWeight: FontWeight.w400,
+                    fontSize: screenHeight * 0.022,
+                    letterSpacing: 0.8,
                   ),
                 ),
                 SizedBox(height: screenHeight * 0.04),
-                Text(
-                  'Secure • Reliable',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
-                    fontSize: screenHeight * 0.016,
-                    letterSpacing: 1,
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    _buildFeaturePill(
+                      CupertinoIcons.lock_shield_fill,
+                      'Secure',
+                    ),
+                    const SizedBox(width: 12),
+                    _buildFeaturePill(
+                      CupertinoIcons.checkmark_shield_fill,
+                      'Reliable',
+                    ),
+                    const SizedBox(width: 12),
+                    _buildFeaturePill(
+                      CupertinoIcons.timer,
+                      'Fast',
+                    ),
+                  ],
+                ),
+                const Spacer(flex: 3),
+                SizedBox(
+                  width: double.infinity,
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      context.go('/login');
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.white,
+                      foregroundColor: AppTheme.primaryDark,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          CupertinoIcons.arrow_right_circle_fill,
+                          size: 24,
+                          color: AppTheme.primary,
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Get Started',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                            color: AppTheme.primaryDark,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: screenHeight * 0.03),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppTheme.primary.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppTheme.accent.withOpacity(0.3),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        CupertinoIcons.info_circle,
+                        color: AppTheme.accent,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          'Emergency safety app for women',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: AppTheme.accent,
+                            fontSize: 13,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 SizedBox(height: screenHeight * 0.02),
@@ -130,6 +165,39 @@ class LandingScreen extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildFeaturePill(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: AppTheme.secondary.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: AppTheme.accent.withOpacity(0.3),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: AppTheme.accent,
+            size: 16,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: AppTheme.accent,
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }
