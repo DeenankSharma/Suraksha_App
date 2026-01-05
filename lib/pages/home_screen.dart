@@ -3,21 +3,39 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_setup/bloc/home_bloc.dart';
 import 'package:flutter_setup/components/navigation_drawer.dart';
+import 'package:flutter_setup/data/services/sos_service.dart';
 import 'package:flutter_setup/theme/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class HomeScreen extends StatelessWidget {
-  HomeScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   final _formKey = GlobalKey<FormState>();
   final _areaController = TextEditingController();
   final _landmarkController = TextEditingController();
   final _descriptionController = TextEditingController();
+  late HomeBloc homeBloc;
+
+  @override
+  void initState() {
+    super.initState();
+    homeBloc = HomeBloc();
+    SOSService().setHomeBloc(homeBloc);
+  }
+
+  @override
+  void dispose() {
+    homeBloc.close();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    HomeBloc homeBloc = HomeBloc();
-
     return BlocConsumer(
       bloc: homeBloc,
       listener: (context, state) {},
@@ -332,7 +350,7 @@ class HomeScreen extends StatelessWidget {
                     },
                   );
 
-                  context.read<HomeBloc>().add(HelpButtonClickedEvent());
+                  homeBloc.add(HelpButtonClickedEvent());
 
                   await Future.delayed(const Duration(seconds: 2));
 
@@ -680,7 +698,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                 );
               } else if (_formKey.currentState!.validate()) {
-                context.read<HomeBloc>().add(HelpFormSubmittedEvent(
+                homeBloc.add(HelpFormSubmittedEvent(
                     area: _areaController.text,
                     landmark: _landmarkController.text,
                     description: _descriptionController.text));
