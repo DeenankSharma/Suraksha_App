@@ -5,7 +5,7 @@ import 'package:flutter_setup/bloc/home_bloc.dart';
 import 'package:flutter_setup/components/contact_widget.dart';
 import 'package:flutter_setup/components/navigation_drawer.dart';
 import 'package:flutter_setup/theme/app_theme.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:go_router/go_router.dart';
 
 class Contacts extends StatefulWidget {
   const Contacts({super.key});
@@ -18,91 +18,16 @@ class _ContactsState extends State<Contacts> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   bool _sortByCallFrequency = false;
-  List<Map<String, String>> _emergencyContacts = [];
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<HomeBloc>().add(ShowContactsEvent());
-      _loadEmergencyContacts();
     });
   }
 
-  Future<void> _loadEmergencyContacts() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final contactNames =
-          prefs.getStringList('emergency_contact_names') ?? [];
-      final contactNumbers =
-          prefs.getStringList('emergency_contact_numbers') ?? [];
-
-      setState(() {
-        _emergencyContacts = [];
-        for (int i = 0;
-            i < contactNames.length && i < contactNumbers.length;
-            i++) {
-          _emergencyContacts.add({
-            'name': contactNames[i],
-            'number': contactNumbers[i],
-          });
-        }
-      });
-    } catch (e) {
-      print('Error loading emergency contacts: $e');
-    }
-  }
-
-  Future<void> _saveEmergencyContacts() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final contactNames = _emergencyContacts.map((c) => c['name']!).toList();
-      final contactNumbers =
-          _emergencyContacts.map((c) => c['number']!).toList();
-
-      await prefs.setStringList('emergency_contact_names', contactNames);
-      await prefs.setStringList('emergency_contact_numbers', contactNumbers);
-    } catch (e) {
-      print('Error saving emergency contacts: $e');
-    }
-  }
-
-  void _addEmergencyContact() {
-    showDialog(
-      context: context,
-      builder: (context) => _EmergencyContactDialog(
-        onSave: (name, number) {
-          setState(() {
-            _emergencyContacts.add({'name': name, 'number': number});
-          });
-          _saveEmergencyContacts();
-        },
-      ),
-    );
-  }
-
-  void _editEmergencyContact(Map<String, String> contact) {
-    showDialog(
-      context: context,
-      builder: (context) => _EmergencyContactDialog(
-        initialName: contact['name'],
-        initialNumber: contact['number'],
-        onSave: (name, number) {
-          setState(() {
-            final index = _emergencyContacts.indexWhere((c) =>
-                c['name'] == contact['name'] &&
-                c['number'] == contact['number']);
-            if (index != -1) {
-              _emergencyContacts[index] = {'name': name, 'number': number};
-            }
-          });
-          _saveEmergencyContacts();
-        },
-      ),
-    );
-  }
-
-  void _removeEmergencyContact(Map<String, String> contact) {
+  void _removeEmergencyContact(Map<String, dynamic> contact) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -111,8 +36,8 @@ class _ContactsState extends State<Contacts> {
           borderRadius: BorderRadius.circular(16),
         ),
         title: const Text('Remove Emergency Contact'),
-        content:
-            Text('Are you sure you want to remove ${contact['name']}?'),
+        content: Text(
+            'Are you sure you want to remove ${contact['displayName'] ?? contact['name']}?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -120,12 +45,8 @@ class _ContactsState extends State<Contacts> {
           ),
           ElevatedButton(
             onPressed: () {
-              setState(() {
-                _emergencyContacts.removeWhere((c) =>
-                    c['name'] == contact['name'] &&
-                    c['number'] == contact['number']);
-              });
-              _saveEmergencyContacts();
+              // Emit Remove Event directly
+              context.read<HomeBloc>().add(RemoveContactEvent(contact));
               Navigator.of(context).pop();
             },
             style: ElevatedButton.styleFrom(
@@ -146,10 +67,11 @@ class _ContactsState extends State<Contacts> {
 
   List<Map<String, dynamic>> _filterAndSortContacts(
       List<Map<String, dynamic>> contacts) {
-    List<Map<String, dynamic>> filteredContacts = contacts;
+    List<Map<String, dynamic>> filteredContacts = List.from(contacts);
 
+    // Filter by search query
     if (_searchQuery.isNotEmpty) {
-      filteredContacts = contacts.where((contact) {
+      filteredContacts = filteredContacts.where((contact) {
         final name = contact['displayName']?.toString().toLowerCase() ?? '';
         final phones = contact['phones'] as List? ?? [];
         final phoneNumbers = phones.map((phone) => phone.toString()).join(' ');
@@ -159,25 +81,19 @@ class _ContactsState extends State<Contacts> {
       }).toList();
     }
 
+    // Sort
     if (_sortByCallFrequency) {
       filteredContacts.sort((a, b) {
         final aCalls = a['callCount'] ?? 0;
         final bCalls = b['callCount'] ?? 0;
-
         if (aCalls != bCalls) {
           return bCalls.compareTo(aCalls);
         }
-
-        if (a['isSaved'] && !b['isSaved']) return -1;
-        if (!a['isSaved'] && b['isSaved']) return 1;
-
-        return a['displayName'].compareTo(b['displayName']);
+        return (a['displayName'] ?? '').compareTo(b['displayName'] ?? '');
       });
     } else {
       filteredContacts.sort((a, b) {
-        if (a['isSaved'] && !b['isSaved']) return -1;
-        if (!a['isSaved'] && b['isSaved']) return 1;
-        return a['displayName'].compareTo(b['displayName']);
+        return (a['displayName'] ?? '').compareTo(b['displayName'] ?? '');
       });
     }
 
@@ -314,110 +230,24 @@ class _ContactsState extends State<Contacts> {
     );
   }
 
-  void _showAddContactDialog(BuildContext context) {
-    final nameController = TextEditingController();
-    final phoneController = TextEditingController();
-
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: const Text('Add Emergency Contact'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: nameController,
-                decoration: InputDecoration(
-                  labelText: 'Contact Name',
-                  hintText: 'Enter contact name',
-                  prefixIcon: Icon(CupertinoIcons.person, color: AppTheme.primary),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: phoneController,
-                decoration: InputDecoration(
-                  labelText: 'Phone Number',
-                  hintText: 'Enter phone number',
-                  prefixIcon: Icon(CupertinoIcons.phone, color: AppTheme.primary),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                keyboardType: TextInputType.phone,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('Cancel', style: TextStyle(color: AppTheme.primary)),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                if (nameController.text.trim().isNotEmpty &&
-                    phoneController.text.trim().isNotEmpty) {
-                  _addManualContact(
-                    context,
-                    nameController.text.trim(),
-                    phoneController.text.trim(),
-                  );
-                  Navigator.of(context).pop();
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content:
-                          const Text('Please enter both name and phone number'),
-                      backgroundColor: AppTheme.error,
-                    ),
-                  );
-                }
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primary,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Add Contact'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  void _addManualContact(BuildContext context, String name, String phone) {
-    final manualContact = {
-      'id': 'manual_${DateTime.now().millisecondsSinceEpoch}',
-      'displayName': name,
-      'phones': [phone],
-      'isSaved': false,
-      'callCount': 0,
-      'isManual': true,
-    };
-
-    context.read<HomeBloc>().add(AddContactEvent(manualContact));
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Added $name to emergency contacts'),
-        backgroundColor: AppTheme.success,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<HomeBloc, HomeState>(
       listener: (context, state) {
-        if (state is ContactsErrorState) {
+        // --- Navigation Logic ---
+        if (state is NavigateToLoginState) {
+          context.go('/login');
+        } else if (state is NavigateToOtpState) {
+          context
+              .read<HomeBloc>()
+              .add(SendOtpEvent(phoneNumber: state.phoneNumber));
+          context.go('/otp');
+        } else if (state is NavigateToHomeState) {
+          context.read<HomeBloc>().add(HomeScreenEvent());
+          context.go('/home');
+        }
+        // --- Error Handling ---
+        else if (state is ContactsErrorState) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.error),
@@ -477,11 +307,6 @@ class _ContactsState extends State<Contacts> {
               ],
             ),
           ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () => _showAddContactDialog(context),
-            backgroundColor: AppTheme.primary,
-            child: const Icon(CupertinoIcons.add, color: Colors.white),
-          ),
         );
       },
     );
@@ -496,210 +321,226 @@ class _ContactsState extends State<Contacts> {
       );
     }
 
-    return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Emergency Contacts Section
-          if (_emergencyContacts.isNotEmpty) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16.0),
-              margin: const EdgeInsets.all(12.0),
-              decoration: BoxDecoration(
-                color: AppTheme.error.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppTheme.error.withOpacity(0.3),
-                  width: 2,
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        CupertinoIcons.exclamationmark_shield_fill,
-                        color: AppTheme.error,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Emergency Contacts (${_emergencyContacts.length})',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.error,
-                        ),
-                      ),
-                    ],
+    if (state is ContactsFetchedState) {
+      // 1. Separate contacts based on 'isSaved' property from BLoC state
+      final savedContacts =
+          state.contacts.where((c) => c['isSaved'] == true).toList();
+      final deviceContacts =
+          state.contacts.where((c) => c['isSaved'] == false).toList();
+
+      return SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // --- Section 1: Saved Emergency Contacts ---
+            if (savedContacts.isNotEmpty) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16.0),
+                margin: const EdgeInsets.all(12.0),
+                decoration: BoxDecoration(
+                  color: AppTheme.error.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppTheme.error.withOpacity(0.3),
+                    width: 2,
                   ),
-                  const SizedBox(height: 12),
-                  ..._emergencyContacts.map(
-                    (contact) => Card(
-                      margin: const EdgeInsets.symmetric(vertical: 4),
-                      elevation: 0,
-                      color: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: BorderSide(
-                          color: AppTheme.accent.withOpacity(0.3),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          CupertinoIcons.exclamationmark_shield_fill,
+                          color: AppTheme.error,
+                          size: 24,
                         ),
-                      ),
-                      child: ListTile(
-                        leading: Container(
-                          width: 40,
-                          height: 40,
-                          decoration: BoxDecoration(
-                            color: AppTheme.error,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: Center(
-                            child: Text(
-                              (contact['name'] ?? 'U').isNotEmpty 
-                                  ? contact['name']![0].toUpperCase() 
-                                  : 'U',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w600,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ),
-                        ),
-                        title: Text(
-                          contact['name']!,
+                        const SizedBox(width: 8),
+                        Text(
+                          'Emergency Contacts (${savedContacts.length})',
                           style: TextStyle(
+                            fontSize: 18,
                             fontWeight: FontWeight.w600,
-                            color: AppTheme.textPrimary,
+                            color: AppTheme.error,
                           ),
                         ),
-                        subtitle: Text(
-                          contact['number']!,
-                          style: TextStyle(
-                            color: AppTheme.textSecondary,
-                          ),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: Icon(
-                                CupertinoIcons.pencil,
-                                color: AppTheme.secondary,
-                              ),
-                              onPressed: () => _editEmergencyContact(contact),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    ...savedContacts.map(
+                      (contact) {
+                        final displayName = contact['displayName'] ??
+                            contact['contactName'] ??
+                            'Unknown';
+                        // Handle phone number variations (list or single string)
+                        String phoneNumber = '';
+                        if (contact['phones'] != null &&
+                            (contact['phones'] as List).isNotEmpty) {
+                          phoneNumber = contact['phones'][0].toString();
+                        } else if (contact['contactPhoneNumber'] != null) {
+                          phoneNumber =
+                              contact['contactPhoneNumber'].toString();
+                        }
+
+                        return Card(
+                          margin: const EdgeInsets.symmetric(vertical: 4),
+                          elevation: 0,
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            side: BorderSide(
+                              color: AppTheme.accent.withOpacity(0.3),
                             ),
-                            IconButton(
+                          ),
+                          child: ListTile(
+                            leading: Container(
+                              width: 40,
+                              height: 40,
+                              decoration: BoxDecoration(
+                                color: AppTheme.error,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  displayName.isNotEmpty
+                                      ? displayName[0].toUpperCase()
+                                      : 'U',
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              displayName,
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppTheme.textPrimary,
+                              ),
+                            ),
+                            subtitle: Text(
+                              phoneNumber,
+                              style: TextStyle(
+                                color: AppTheme.textSecondary,
+                              ),
+                            ),
+                            trailing: IconButton(
                               icon: Icon(
-                                CupertinoIcons.delete,
+                                CupertinoIcons.minus_circle,
                                 color: AppTheme.error,
                               ),
                               onPressed: () => _removeEmergencyContact(contact),
                             ),
-                          ],
-                        ),
-                      ),
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: _addEmergencyContact,
-                      icon: const Icon(CupertinoIcons.add),
-                      label: const Text('Add Emergency Contact'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.error,
-                        foregroundColor: Colors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-
-          // Device Contacts Section
-          if (state is ContactsFetchedState) ...[
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16.0),
-              margin: const EdgeInsets.all(12.0),
-              decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.05),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: AppTheme.primary.withOpacity(0.3),
+                  ],
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        CupertinoIcons.person_crop_circle_fill,
-                        color: AppTheme.primary,
-                        size: 24,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Device Contacts',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.primary,
-                        ),
-                      ),
-                    ],
+            ],
+
+            // --- Section 2: Device Contacts ---
+            if (deviceContacts.isNotEmpty) ...[
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16.0),
+                margin: const EdgeInsets.all(12.0),
+                decoration: BoxDecoration(
+                  color: AppTheme.primary.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: AppTheme.primary.withOpacity(0.3),
                   ),
-                  const SizedBox(height: 12),
-                  _buildDeviceContactsList(state),
-                ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          CupertinoIcons.person_crop_circle_fill,
+                          color: AppTheme.primary,
+                          size: 24,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Device Contacts',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                            color: AppTheme.primary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildDeviceContactsList(deviceContacts),
+                  ],
+                ),
               ),
+            ],
+          ],
+        ),
+      );
+    }
+
+    // Error state handling
+    if (state is ContactsErrorState) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              CupertinoIcons.exclamationmark_triangle,
+              size: 64,
+              color: AppTheme.error.withOpacity(0.5),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Error loading contacts',
+              style: TextStyle(
+                fontSize: 18,
+                color: AppTheme.error,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              state.error,
+              style: TextStyle(
+                fontSize: 14,
+                color: AppTheme.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () {
+                context.read<HomeBloc>().add(ShowContactsEvent());
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primary,
+              ),
+              child: const Text('Retry'),
             ),
           ],
+        ),
+      );
+    }
 
-          // Error state
-          if (state is ContactsErrorState)
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    CupertinoIcons.exclamationmark_triangle,
-                    size: 64,
-                    color: AppTheme.error.withOpacity(0.5),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Error loading contacts',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: AppTheme.error,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    state.error,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: AppTheme.textSecondary,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-        ],
+    // Default loading/empty state
+    return Center(
+      child: CircularProgressIndicator(
+        color: AppTheme.primary,
       ),
     );
   }
 
-  Widget _buildDeviceContactsList(ContactsFetchedState state) {
-    final filteredContacts = _filterAndSortContacts(state.contacts);
+  Widget _buildDeviceContactsList(List<Map<String, dynamic>> deviceContacts) {
+    final filteredContacts = _filterAndSortContacts(deviceContacts);
 
     if (filteredContacts.isEmpty) {
       return Center(
@@ -737,150 +578,23 @@ class _ContactsState extends State<Contacts> {
         return ContactWidget(
           contact: contact,
           onAdd: () {
-            final phone = contact['phones']?.isNotEmpty == true
-                ? contact['phones'][0].toString()
-                : '';
             final name = contact['displayName'] ?? 'Unknown';
+            // Emit Add Event directly
+            context.read<HomeBloc>().add(AddContactEvent(contact));
 
-            if (phone.isNotEmpty) {
-              setState(() {
-                final exists =
-                    _emergencyContacts.any((ec) => ec['number'] == phone);
-
-                if (!exists) {
-                  _emergencyContacts.add({
-                    'name': name,
-                    'number': phone,
-                  });
-                }
-              });
-              _saveEmergencyContacts();
-
-              context.read<HomeBloc>().add(AddContactEvent(contact));
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Added $name to emergency contacts'),
-                  backgroundColor: AppTheme.success,
-                ),
-              );
-            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Adding $name to emergency contacts...'),
+                backgroundColor: AppTheme.primary,
+              ),
+            );
           },
           onRemove: () {
-            final phone = contact['phones']?.isNotEmpty == true
-                ? contact['phones'][0].toString()
-                : '';
-
-            if (phone.isNotEmpty) {
-              setState(() {
-                _emergencyContacts
-                    .removeWhere((ec) => ec['number'] == phone);
-              });
-              _saveEmergencyContacts();
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                      'Removed ${contact['displayName']} from emergency contacts'),
-                  backgroundColor: AppTheme.secondary,
-                ),
-              );
-            }
-
+            // Emit Remove Event directly
             context.read<HomeBloc>().add(RemoveContactEvent(contact));
           },
         );
       },
-    );
-  }
-}
-
-class _EmergencyContactDialog extends StatefulWidget {
-  final String? initialName;
-  final String? initialNumber;
-  final Function(String name, String number) onSave;
-
-  const _EmergencyContactDialog({
-    this.initialName,
-    this.initialNumber,
-    required this.onSave,
-  });
-
-  @override
-  State<_EmergencyContactDialog> createState() =>
-      _EmergencyContactDialogState();
-}
-
-class _EmergencyContactDialogState extends State<_EmergencyContactDialog> {
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _numberController = TextEditingController();
-
-  @override
-  void initState() {
-    super.initState();
-    _nameController.text = widget.initialName ?? '';
-    _numberController.text = widget.initialNumber ?? '';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      title: Text(widget.initialName == null
-          ? 'Add Emergency Contact'
-          : 'Edit Emergency Contact'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextField(
-            controller: _nameController,
-            decoration: InputDecoration(
-              labelText: 'Name',
-              prefixIcon: Icon(CupertinoIcons.person, color: AppTheme.primary),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _numberController,
-            decoration: InputDecoration(
-              labelText: 'Phone Number',
-              prefixIcon: Icon(CupertinoIcons.phone, color: AppTheme.primary),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            keyboardType: TextInputType.phone,
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: Text('Cancel', style: TextStyle(color: AppTheme.primary)),
-        ),
-        ElevatedButton(
-          onPressed: () {
-            if (_nameController.text.trim().isNotEmpty &&
-                _numberController.text.trim().isNotEmpty) {
-              widget.onSave(
-                _nameController.text.trim(),
-                _numberController.text.trim(),
-              );
-              Navigator.of(context).pop();
-            }
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: AppTheme.primary,
-          ),
-          child: Text(widget.initialName == null ? 'Add' : 'Save'),
-        ),
-      ],
     );
   }
 }

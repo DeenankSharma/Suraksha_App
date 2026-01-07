@@ -356,7 +356,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       }
 
       print("Fetching saved contacts...");
-      final savedContactsResult = await getSavedContacts();
+      final savedContactsResult = await getSavedContacts(emit);
       if (!savedContactsResult['success']) {
         print("Saved contacts error: ${savedContactsResult['error']}");
         emit(ContactsErrorState(savedContactsResult['error'].toString()));
@@ -392,34 +392,47 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   ) async {
     try {
       emit(ContactsLoadingState());
-      ApiService api = ApiService();
 
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final phoneNumber = await prefs.getString('phoneNumber');
+      // 1. Get Auth Data
+      const String prefsKey = 'auth_data';
+      final prefs = await SharedPreferences.getInstance();
+      final String? authJson = prefs.getString(prefsKey);
 
-      if (phoneNumber == null || phoneNumber.isEmpty) {
-        emit(ContactsErrorState(
-            'User phone number not found. Please login again.'));
+      if (authJson == null) {
+        emit(ContactsErrorState('User session not found.'));
         return;
       }
 
+      // 2. Parse Phone Number
+      final authData = AuthData.fromJson(authJson);
+      final phoneNumber = authData.phoneNumber;
+
+      if (phoneNumber.isEmpty) {
+        emit(ContactsErrorState('Invalid user data.'));
+        return;
+      }
+
+      // 3. Prepare Contact Data
       final contactName = event.contact['displayName'] ?? 'Unknown';
       final contactPhone = event.contact['phones']?.isNotEmpty == true
           ? event.contact['phones'][0].toString()
           : '';
 
       if (contactPhone.isEmpty) {
-        emit(ContactsErrorState('Invalid phone number'));
+        emit(ContactsErrorState('Invalid contact phone number'));
         return;
       }
 
+      // 4. Call API
+      ApiService api = ApiService();
       print("Adding contact: $contactName ($contactPhone)");
+
       final response = await api.addSosContact(
           userPhoneNumber: phoneNumber,
           contactName: contactName,
           contactPhoneNumber: contactPhone);
 
-      if (response == 201) {
+      if (response == 200) {
         print("Contact added successfully");
         add(ShowContactsEvent());
       } else {
@@ -438,19 +451,37 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       emit(ContactsLoadingState());
 
-      // final response = await http.delete(
-      //   Uri.parse('$baseUrl/remove_contact'),
-      //   body: {
-      //     'userPhoneNumber': 'YOUR_USER_PHONE', // Replace with actual user phone
-      //     'contactPhoneNumber': event.contact['phones'][0],
-      //   },
-      // );
-      ApiService api = ApiService();
+      // 1. Get Auth Data
+      const String prefsKey = 'auth_data';
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final phoneNumber = await prefs.getString('phoneNumber');
-      final response = api.removeSosContact(
-          userPhoneNumber: phoneNumber!,
-          contactPhoneNumber: event.contact['phones'][0]);
+      final String? authJson = prefs.getString(prefsKey);
+
+      if (authJson == null) {
+        emit(ContactsErrorState('User session not found.'));
+        return;
+      }
+
+      // 2. Parse Phone Number
+      final authData = AuthData.fromJson(authJson);
+      final phoneNumber = authData.phoneNumber;
+
+      // 3. Extract Contact Phone Number safely
+      final contactPhones = event.contact['phones'];
+      String contactPhoneNumber = '';
+
+      if (contactPhones != null &&
+          (contactPhones is List) &&
+          contactPhones.isNotEmpty) {
+        contactPhoneNumber = contactPhones[0].toString();
+      } else {
+        emit(ContactsErrorState('Invalid contact phone number'));
+        return;
+      }
+
+      // 4. Call API
+      ApiService api = ApiService();
+      final response = await api.removeSosContact(
+          userPhoneNumber: phoneNumber, contactPhoneNumber: contactPhoneNumber);
 
       if (response == 200) {
         add(ShowContactsEvent());
@@ -508,19 +539,35 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }
   }
 
-  Future<Map<String, dynamic>> getSavedContacts() async {
+  Future<Map<String, dynamic>> getSavedContacts(Emitter<HomeState> emit) async {
+    const String prefsKey = 'auth_data';
+
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final phoneNumber = await prefs.getString('phoneNumber');
+      final String? authJson = prefs.getString(prefsKey);
 
-      if (phoneNumber == null || phoneNumber.isEmpty) {
-        return {
-          'success': false,
-          'error': 'User phone number not found. Please login again.',
-          'contacts': [],
-        };
+      // 1. Check if auth data exists. If not, navigate to login.
+      if (authJson == null) {
+        print("No auth data found in getSavedContacts");
+        emit(NavigateToLoginState());
+        return {'success': false, 'contacts': []};
       }
 
+      AuthData authData;
+
+      // 2. Try parsing the data. If corrupt, clear prefs and navigate to login.
+      try {
+        authData = AuthData.fromJson(authJson);
+      } catch (e) {
+        print("Auth data corrupted in getSavedContacts: $e");
+        await prefs.remove(prefsKey);
+        emit(NavigateToLoginState());
+        return {'success': false, 'contacts': []};
+      }
+
+      final String phoneNumber = authData.phoneNumber;
+
+      // 3. Call the API
       print("Fetching saved contacts for phone: $phoneNumber");
       ApiService api = ApiService();
       final response = await api.getSavedContacts(phoneNumber);
@@ -533,6 +580,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       };
     } catch (e) {
       print("Error fetching saved contacts: $e");
+      // Note: For network errors, we usually just return failure so the UI shows a snackbar,
+      // rather than logging the user out.
       return {
         'success': false,
         'error': 'Failed to fetch saved contacts: ${e.toString()}',
