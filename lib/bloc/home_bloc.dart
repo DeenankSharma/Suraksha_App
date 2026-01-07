@@ -81,21 +81,41 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     Emitter<HomeState> emit,
   ) async {
     emit(LogsLoadingState());
-    try {
-      ApiService api = ApiService();
-      final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? phoneNumber = prefs.getString('phoneNumber');
+    const String prefsKey = 'auth_data';
 
-      if (phoneNumber == null || phoneNumber.isEmpty) {
-        emit(LogsErrorState('Phone number not found. Please login again.'));
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? authJson = prefs.getString(prefsKey);
+
+      // 1. Check if auth data exists. If not, force login.
+      if (authJson == null) {
+        dev.log('No auth data found, navigating to login.');
+        emit(NavigateToLoginState());
         return;
       }
 
-      dev.log('Fetching logs for phone number: $phoneNumber');
-      final logs = await api.getLogs(phoneNumber: phoneNumber);
+      AuthData authData;
+
+      // 2. Try parsing the data. If corrupt, clear prefs and force login.
+      try {
+        authData = AuthData.fromJson(authJson);
+      } catch (e) {
+        dev.log('Auth data corrupted: $e');
+        await prefs.remove(prefsKey);
+        emit(NavigateToLoginState());
+        return;
+      }
+
+      // 3. Proceed with API call using the parsed phone number
+      ApiService api = ApiService();
+      dev.log('Fetching logs for phone number: ${authData.phoneNumber}');
+
+      final logs = await api.getLogs(phoneNumber: authData.phoneNumber);
+
       dev.log('Logs fetched successfully: ${logs.toString()}');
       emit(LogsFetchedState(logs));
     } catch (e) {
+      // 4. Handle API/Network errors (Do not logout here, just show error)
       dev.log('Error fetching logs: $e');
       emit(LogsErrorState(e.toString()));
     }

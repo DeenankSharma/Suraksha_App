@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_setup/bloc/home_bloc.dart';
 import 'package:flutter_setup/theme/app_theme.dart';
+import 'package:go_router/go_router.dart'; // Import GoRouter
 
 import '../components/navigation_drawer.dart';
 
@@ -26,7 +27,21 @@ class _ContactsLogState extends State<ContactsLog> {
   Widget build(BuildContext context) {
     return BlocConsumer<HomeBloc, HomeState>(
       listener: (context, state) {
-        if (state is LogsErrorState) {
+        // --- Navigation Logic ---
+        if (state is NavigateToLoginState) {
+          context.go('/login');
+        } else if (state is NavigateToOtpState) {
+          context
+              .read<HomeBloc>()
+              .add(SendOtpEvent(phoneNumber: state.phoneNumber));
+          context.go('/otp');
+        } else if (state is NavigateToHomeState) {
+          // If for some reason we need to reset/go home
+          context.read<HomeBloc>().add(HomeScreenEvent());
+          context.go('/home');
+        }
+        // --- Error Handling ---
+        else if (state is LogsErrorState) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(state.error),
@@ -101,6 +116,8 @@ class _ContactsLogState extends State<ContactsLog> {
       },
     );
   }
+
+  // ... (Rest of your code: _buildBody, _buildLogsList, LogWidget, etc. remains unchanged)
 
   Widget _buildBody(BuildContext context, HomeState state) {
     if (state is LogsLoadingState) {
