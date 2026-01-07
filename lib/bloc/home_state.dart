@@ -5,6 +5,15 @@ abstract class HomeState {}
 
 class HomeInitial extends HomeState {}
 
+class NavigateToLoginState extends HomeState {}
+
+class NavigateToOtpState extends HomeState {
+  final String phoneNumber;
+  NavigateToOtpState(this.phoneNumber);
+}
+
+class NavigateToHomeState extends HomeState {}
+
 // Contact States
 class ContactsLoadingState extends HomeState {}
 

@@ -1,10 +1,11 @@
 import 'dart:developer';
 
 import 'package:dio/dio.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class ApiService {
   final Dio _dio = Dio();
-  final String baseUrl = "http://laptopipaddress(cmd>>ipconfig - to get laptop ip):3000";
+  final String baseUrl = dotenv.env['API_URL'] as String;
 
   ApiService() {
     _dio.options.baseUrl = baseUrl;
@@ -113,6 +114,7 @@ class ApiService {
 
   Future<Map<String, dynamic>> loginUser(String phoneNumber) async {
     log("Phone Number in apis.dart : $phoneNumber");
+    log("url is : $baseUrl");
     try {
       final response = await _dio.post('/login', data: {
         'phoneNumber': phoneNumber,
@@ -168,6 +170,7 @@ class ApiService {
       throw _handleError(e);
     }
   }
+
   Exception _handleError(DioException e) {
     if (e.response != null) {
       return Exception(e.response?.data['error'] ?? 'Server error occurred');

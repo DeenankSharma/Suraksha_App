@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_setup/bloc/home_bloc.dart';
 import 'package:flutter_setup/data/services/background_service.dart';
 import 'package:flutter_setup/data/services/ble_manager.dart';
@@ -9,7 +10,7 @@ import 'package:go_router/go_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+  await dotenv.load(fileName: ".env");
   try {
     await initializeBackgroundService();
     print('Background service initialized successfully');
@@ -29,7 +30,7 @@ void main() async {
   } catch (e) {
     print('Error initializing BLE Manager: $e');
   }
-  
+
   runApp(const MyApp());
 }
 

@@ -1,3 +1,4 @@
+import 'package:flutter_setup/data/models/auth_data_model.dart';
 import 'package:flutter_setup/pages/contacts.dart';
 import 'package:flutter_setup/pages/contacts_log.dart';
 import 'package:flutter_setup/pages/home_screen.dart';
@@ -20,7 +21,7 @@ class AppRouter {
         GoRoute(
           path: '/',
           name: 'landing',
-          builder: (context, state) => LandingScreen(),
+          builder: (context, state) => const LandingScreen(),
         ),
         GoRoute(
           path: '/login',
@@ -35,45 +36,58 @@ class AppRouter {
         GoRoute(
           path: '/home',
           name: 'home',
-          builder: (context, state) => HomeScreen(),
+          builder: (context, state) => const HomeScreen(),
         ),
-
         GoRoute(
           path: '/contacts',
           name: 'contacts',
-          builder: (context, state) => ContactsLog(),
+          builder: (context, state) => const ContactsLog(),
         ),
         GoRoute(
           path: '/manage_contacts',
           name: 'manage_contacts',
-          builder: (context, state) => Contacts(),
+          builder: (context, state) => const Contacts(),
         ),
         GoRoute(
           path: '/profile',
           name: 'profile',
-          builder: (context, state) => ProfilePage(),
+          builder: (context, state) => const ProfilePage(),
         ),
         GoRoute(
           path: '/setup',
           name: 'setup',
           builder: (context, state) => const SetupScreen(),
         ),
-        // GoRoute(path: .)ute
       ],
     );
   }
 
-  // Rename the old initializeRouter to _getInitialLocation
   static Future<String> _getInitialLocation() async {
     final prefs = await SharedPreferences.getInstance();
-    final phoneNumber = prefs.getString('pn') ?? '';
-    final setupCompleted = prefs.getBool('setup_completed') ?? false;
-    
-    if (phoneNumber.isNotEmpty && setupCompleted) {
-      return '/home';
-    } else if (phoneNumber.isNotEmpty && !setupCompleted) {
-      return '/setup';
+    final String? authJson = prefs.getString('auth_data');
+
+    // Scenario 1: No data found -> Landing Page
+    if (authJson == null) {
+      return '/';
     }
-    return '/';
+
+    try {
+      final authData = AuthData.fromJson(authJson);
+
+      // Scenario 3: Verified -> Home
+      if (authData.isVerified) {
+        // Note: If you still need the Setup logic (e.g., checking if emergency contacts exist),
+        // you can check a separate flag here. For now, we route directly to Home.
+        return '/home';
+      }
+      // Scenario 2: Data exists but not verified -> OTP Screen
+      else {
+        return '/otp';
+      }
+    } catch (e) {
+      // If parsing fails (corrupt data), clear it and go to Landing
+      await prefs.remove('auth_data');
+      return '/';
+    }
   }
 }

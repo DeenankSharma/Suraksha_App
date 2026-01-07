@@ -3,7 +3,6 @@ import 'dart:developer' as dev;
 import 'package:bloc/bloc.dart';
 import 'package:call_log/call_log.dart';
 import 'package:fast_contacts/fast_contacts.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_setup/data/services/apis.dart';
 import 'package:flutter_setup/data/services/sms_service.dart';
 import 'package:flutter_setup/utils/get_location.dart';
@@ -13,12 +12,14 @@ import 'package:permission_handler/permission_handler.dart'
     as contactPermission;
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../data/models/auth_data_model.dart';
+
 part 'home_event.dart';
 part 'home_state.dart';
 
 class HomeBloc extends Bloc<HomeEvent, HomeState> {
   bool _isLoadingContacts = false;
-  
+
   HomeBloc() : super(HomeInitial()) {
     on<ShowContactsEvent>(showContactsEvent);
     on<AddContactEvent>(addContactEvent);
@@ -32,6 +33,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     on<OpenSettingsEvent>(openSettings);
     on<UpdateProfileEvent>(updateProfile);
     on<LogoutEvent>(logoutEvent);
+    on<GetStartedEvent>(getStarted);
   }
 
   Future<void> openSettings(
@@ -39,6 +41,39 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     Emitter<HomeState> emit,
   ) async {
     //logic here
+  }
+
+  Future<void> getStarted(
+    GetStartedEvent event,
+    Emitter<HomeState> emit,
+  ) async {
+    const String prefsKey = 'auth_data';
+    final prefs = await SharedPreferences.getInstance();
+    final String? authJson = prefs.getString(prefsKey);
+
+    // Scenario 1: No data found -> Login
+    if (authJson == null) {
+      emit(NavigateToLoginState());
+      return;
+    }
+
+    try {
+      final authData = AuthData.fromJson(authJson);
+
+      if (authData.isVerified) {
+        // Scenario 3: Verified -> Home
+        emit(NavigateToHomeState());
+      } else {
+        // Scenario 2: Exists but not verified -> OTP
+        // We might want to resend OTP here automatically,
+        // but for now, we just navigate to the screen.
+        emit(NavigateToOtpState(authData.phoneNumber));
+      }
+    } catch (e) {
+      // Corrupt data -> Clear and Login
+      await prefs.remove(prefsKey);
+      emit(NavigateToLoginState());
+    }
   }
 
   Future<void> onFetchLogs(
@@ -49,15 +84,15 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       ApiService api = ApiService();
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String? pn = prefs.getString('pn');
-      
-      if (pn == null || pn.isEmpty) {
+      final String? phoneNumber = prefs.getString('phoneNumber');
+
+      if (phoneNumber == null || phoneNumber.isEmpty) {
         emit(LogsErrorState('Phone number not found. Please login again.'));
         return;
       }
-      
-      dev.log('Fetching logs for phone number: $pn');
-      final logs = await api.getLogs(phoneNumber: pn);
+
+      dev.log('Fetching logs for phone number: $phoneNumber');
+      final logs = await api.getLogs(phoneNumber: phoneNumber);
       dev.log('Logs fetched successfully: ${logs.toString()}');
       emit(LogsFetchedState(logs));
     } catch (e) {
@@ -70,11 +105,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       HelpFormSubmittedEvent event, Emitter<HomeState> emit) async {
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String pn = prefs.getString('pn')!;
+      final String phoneNumber = prefs.getString('phoneNumber')!;
       ApiService api = ApiService();
       Map<String, dynamic>? _locationData = await getLocation();
       api.logDetailedEmergency(
-        phoneNumber: pn,
+        phoneNumber: phoneNumber,
         longitude: _locationData?['longitude'],
         latitude: _locationData?['latitude'],
         area: event.area,
@@ -95,31 +130,31 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   ) async {
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String pn = prefs.getString('pn')!;
-      dev.log("Emergency help requested for phone: $pn");
-      
+      final String phoneNumber = prefs.getString('phoneNumber')!;
+      dev.log("Emergency help requested for phone: $phoneNumber");
+
       ApiService api = ApiService();
       dev.log("API service initialized");
-      
+
       Map<String, dynamic>? locationData = await getLocation();
       dev.log("Location data fetched: $locationData");
-      
+
       final response = await api.logEmergency(
-          phoneNumber: pn,
+          phoneNumber: phoneNumber,
           longitude: locationData?['longitude'],
           latitude: locationData?['latitude']);
       dev.log("Emergency logged to backend: ${response.toString()}");
-      
+
       await _sendEmergencySmsWithFallback(
-        phoneNumber: pn,
+        phoneNumber: phoneNumber,
         locationData: locationData,
         emit: emit,
       );
-      
+
       emit(HelpRequestedState("emer"));
     } catch (er) {
       dev.log("Error in emergency help: $er");
-      emit(HelpRequestedState("emer")); 
+      emit(HelpRequestedState("emer"));
     }
   }
 
@@ -130,38 +165,37 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   }) async {
     try {
       final SmsService smsService = SmsService();
-      
+
       final emergencyContacts = await _getEmergencyContacts();
       if (emergencyContacts.isEmpty) {
         dev.log("No emergency contacts found");
         return;
       }
-      
+
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       final userName = prefs.getString('user_name') ?? 'Emergency User';
-      
+
       final message = smsService.createEmergencyMessage(
         userName: userName,
         latitude: locationData?['latitude']?.toString() ?? 'Unknown',
         longitude: locationData?['longitude']?.toString() ?? 'Unknown',
         address: locationData?['address'],
       );
-      
+
       dev.log("Sending emergency SMS to ${emergencyContacts.length} contacts");
-      
+
       // Send SMS with fallback
       final smsResult = await smsService.sendEmergencySms(
         phoneNumber: phoneNumber,
         message: message,
         emergencyContacts: emergencyContacts,
       );
-      
+
       if (smsResult['success']) {
         dev.log("Emergency SMS sent successfully via ${smsResult['method']}");
       } else {
         dev.log("Emergency SMS failed: ${smsResult['error']}");
       }
-      
     } catch (e) {
       dev.log("Error in SMS fallback: $e");
     }
@@ -170,17 +204,18 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Future<List<String>> _getEmergencyContacts() async {
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      
-      final emergencyNumbers = prefs.getStringList('emergency_contact_numbers') ?? [];
-      
+
+      final emergencyNumbers =
+          prefs.getStringList('emergency_contact_numbers') ?? [];
+
       dev.log("Found ${emergencyNumbers.length} emergency contacts from setup");
-      
+
       if (emergencyNumbers.isEmpty) {
-        final String pn = prefs.getString('pn') ?? '';
-        if (pn.isNotEmpty) {
+        final String phoneNumber = prefs.getString('phoneNumber') ?? '';
+        if (phoneNumber.isNotEmpty) {
           final ApiService api = ApiService();
-          final savedContacts = await api.getSavedContacts(pn);
-          
+          final savedContacts = await api.getSavedContacts(phoneNumber);
+
           for (var contact in savedContacts) {
             final phoneNumber = contact['contactPhoneNumber']?.toString();
             if (phoneNumber != null && phoneNumber.isNotEmpty) {
@@ -189,10 +224,9 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           }
         }
       }
-      
+
       dev.log("Found ${emergencyNumbers.length} emergency contacts");
       return emergencyNumbers;
-      
     } catch (e) {
       dev.log("Error getting emergency contacts: $e");
       return [];
@@ -212,22 +246,29 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     SendOtpEvent event,
     Emitter<HomeState> emit,
   ) async {
+    const String prefsKey = 'auth_data';
+
     try {
       emit(OtpLoadingState());
-      phoneNumber = event.phoneNumber;
-      dev.log('Attempting to verify phone number: $phoneNumber');
+      final phoneNumber = event.phoneNumber;
+
+      // 1. Save strictly as AuthData (Unverified)
+      final authData = AuthData(phoneNumber: phoneNumber, isVerified: false);
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('pn', phoneNumber);
-      final apiService = ApiService();
-      dev.log('Sending login request for phone: $phoneNumber');
-      final response = await apiService.loginUser(phoneNumber);
-      dev.log("Response in bloc.dart : ${response.toString()}");
+      await prefs.setString(prefsKey, authData.toJson());
+
+      // 2. Call API
+      ApiService apiService = ApiService();
+      // NOTE: Ensure your ApiService doesn't rely on 'phoneNumber' from shared prefs internally
+      await apiService.loginUser(phoneNumber);
+
       emit(OtpSentState());
     } catch (e) {
-      dev.log('Top level error: $e');
-      if (!emit.isDone) {
-        emit(OtpErrorState('Unexpected error occurred: ${e.toString()}'));
-      }
+      // Error handling: Clear struct
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(prefsKey);
+
+      emit(OtpErrorState(e.toString()));
     }
   }
 
@@ -235,43 +276,41 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     VerifyOtpEvent event,
     Emitter<HomeState> emit,
   ) async {
+    const String prefsKey = 'auth_data';
+
     try {
       emit(OtpLoadingState());
 
-      final otp = event.otp;
-      final apiService = ApiService();
-      
       final prefs = await SharedPreferences.getInstance();
-      final pn = prefs.getString('pn') ?? phoneNumber;
-      
-      dev.log('Verifying OTP - Phone: $pn, OTP: $otp');
-      
-      final response = await apiService.verifyOtp(otp, pn);
-      dev.log("Response for otp verification : ${response.toString()}");
+      final String? authJson = prefs.getString(prefsKey);
+
+      if (authJson == null) {
+        emit(OtpErrorState("Session expired. Please login again."));
+        return;
+      }
+
+      // Read current phone number from AuthData
+      final currentAuth = AuthData.fromJson(authJson);
+      final phoneNumber = currentAuth.phoneNumber;
+
+      ApiService apiService = ApiService();
+      final response = await apiService.verifyOtp(event.otp, phoneNumber);
+
       if (response['success']) {
-        dev.log("OtpVerifiedState in bloc.dart");
+        // Success: Update AuthData to Verified
+        final newAuth = AuthData(phoneNumber: phoneNumber, isVerified: true);
+        await prefs.setString(prefsKey, newAuth.toJson());
+
         emit(OtpVerifiedState());
       } else {
-        dev.log("OtpErrorState in bloc.dart");
-        emit(OtpErrorState(response['message'] ?? 'Verification failed'));
+        // Failure: Delete struct as requested
+        await prefs.remove(prefsKey);
+        emit(OtpErrorState('Verification failed'));
       }
-    } on FirebaseAuthException catch (e) {
-      String errorMessage;
-
-      switch (e.code) {
-        case 'invalid-verification-code':
-          errorMessage = 'Invalid OTP. Please try again.';
-          break;
-        case 'invalid-verification-id':
-          errorMessage = 'Invalid verification. Please request new OTP.';
-          break;
-        default:
-          errorMessage = 'Verification failed: ${e.message}';
-      }
-
-      emit(OtpErrorState(errorMessage));
     } catch (e) {
-      emit(OtpErrorState('Unexpected error occurred: ${e.toString()}'));
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(prefsKey);
+      emit(OtpErrorState(e.toString()));
     }
   }
 
@@ -283,11 +322,11 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       print("Contacts are already being loaded, skipping...");
       return;
     }
-    
+
     try {
       _isLoadingContacts = true;
       emit(ContactsLoadingState());
-  
+
       print("Fetching device contacts...");
       final deviceContactsResult = await getDeviceContacts();
       if (!deviceContactsResult['success']) {
@@ -316,7 +355,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         savedContactsResult['contacts'],
         callLogsResult['callLogs'] ?? [],
       );
-  
+
       print("Successfully loaded ${processedContacts.length} contacts");
       emit(ContactsFetchedState(processedContacts));
     } catch (err) {
@@ -334,28 +373,29 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       emit(ContactsLoadingState());
       ApiService api = ApiService();
-      
+
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final pn = await prefs.getString('pn');
-      
-      if (pn == null || pn.isEmpty) {
-        emit(ContactsErrorState('User phone number not found. Please login again.'));
+      final phoneNumber = await prefs.getString('phoneNumber');
+
+      if (phoneNumber == null || phoneNumber.isEmpty) {
+        emit(ContactsErrorState(
+            'User phone number not found. Please login again.'));
         return;
       }
-      
+
       final contactName = event.contact['displayName'] ?? 'Unknown';
-      final contactPhone = event.contact['phones']?.isNotEmpty == true 
-          ? event.contact['phones'][0].toString() 
+      final contactPhone = event.contact['phones']?.isNotEmpty == true
+          ? event.contact['phones'][0].toString()
           : '';
-      
+
       if (contactPhone.isEmpty) {
         emit(ContactsErrorState('Invalid phone number'));
         return;
       }
-      
+
       print("Adding contact: $contactName ($contactPhone)");
       final response = await api.addSosContact(
-          userPhoneNumber: pn,
+          userPhoneNumber: phoneNumber,
           contactName: contactName,
           contactPhoneNumber: contactPhone);
 
@@ -387,9 +427,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       // );
       ApiService api = ApiService();
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final pn = await prefs.getString('pn');
+      final phoneNumber = await prefs.getString('phoneNumber');
       final response = api.removeSosContact(
-          userPhoneNumber: pn!, contactPhoneNumber: event.contact['phones'][0]);
+          userPhoneNumber: phoneNumber!,
+          contactPhoneNumber: event.contact['phones'][0]);
 
       if (response == 200) {
         add(ShowContactsEvent());
@@ -407,13 +448,15 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       List<ContactField> fields = ContactField.values.toList();
 
       // Request permission and check if it was granted
-      final permissionStatus = await contactPermission.Permission.contacts.request();
+      final permissionStatus =
+          await contactPermission.Permission.contacts.request();
       print("Permission status: $permissionStatus");
-      
+
       if (permissionStatus != contactPermission.PermissionStatus.granted) {
         return {
           'success': false,
-          'error': 'Contacts permission not granted. Please enable contacts permission in settings.',
+          'error':
+              'Contacts permission not granted. Please enable contacts permission in settings.',
           'contacts': [],
         };
       }
@@ -421,7 +464,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       print("Permission granted, fetching contacts...");
       contacts = await FastContacts.getAllContacts(fields: fields);
       print("Fetched ${contacts.length} contacts");
-      
+
       List<Map<String, dynamic>> processedContacts = contacts.map((contact) {
         return {
           'id': contact.id,
@@ -429,7 +472,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           'phones': contact.phones.map((phone) => phone.number).toList(),
         };
       }).toList();
-      
+
       print("Processed ${processedContacts.length} contacts");
       return {
         'success': true,
@@ -448,22 +491,22 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
   Future<Map<String, dynamic>> getSavedContacts() async {
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final pn = await prefs.getString('pn');
-      
-      if (pn == null || pn.isEmpty) {
+      final phoneNumber = await prefs.getString('phoneNumber');
+
+      if (phoneNumber == null || phoneNumber.isEmpty) {
         return {
           'success': false,
           'error': 'User phone number not found. Please login again.',
           'contacts': [],
         };
       }
-      
-      print("Fetching saved contacts for phone: $pn");
+
+      print("Fetching saved contacts for phone: $phoneNumber");
       ApiService api = ApiService();
-      final response = await api.getSavedContacts(pn);
-      
+      final response = await api.getSavedContacts(phoneNumber);
+
       print("Raw saved contacts response: $response");
-      
+
       return {
         'success': true,
         'contacts': response,
@@ -482,7 +525,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       final callLogPermission = await contactPermission.Permission.phone.status;
       if (callLogPermission != contactPermission.PermissionStatus.granted) {
-        final requestResult = await contactPermission.Permission.phone.request();
+        final requestResult =
+            await contactPermission.Permission.phone.request();
         if (requestResult != contactPermission.PermissionStatus.granted) {
           return {
             'success': false,
@@ -493,27 +537,28 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       }
 
       dev.log("Call log permission granted, fetching call logs...");
-      
+
       Iterable<CallLogEntry> entries = await CallLog.get();
-      
+
       // Convert to list and filter recent calls (last 30 days)
       final now = DateTime.now();
       final thirtyDaysAgo = now.subtract(const Duration(days: 30));
-      
+
       List<Map<String, dynamic>> callLogs = entries
-          .where((entry) => entry.timestamp != null && 
-                            DateTime.fromMillisecondsSinceEpoch(entry.timestamp!) 
-                                .isAfter(thirtyDaysAgo))
+          .where((entry) =>
+              entry.timestamp != null &&
+              DateTime.fromMillisecondsSinceEpoch(entry.timestamp!)
+                  .isAfter(thirtyDaysAgo))
           .map((entry) => {
-            'phoneNumber': entry.number ?? '',
-            'callType': entry.callType?.toString() ?? 'unknown',
-            'timestamp': entry.timestamp,
-            'duration': entry.duration,
-          })
+                'phoneNumber': entry.number ?? '',
+                'callType': entry.callType?.toString() ?? 'unknown',
+                'timestamp': entry.timestamp,
+                'duration': entry.duration,
+              })
           .toList();
-      
+
       dev.log("Found ${callLogs.length} call logs from last 30 days");
-      
+
       return {
         'success': true,
         'callLogs': callLogs,
@@ -550,9 +595,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       print("Error processing saved contacts: $e");
       savedContacts = [];
     }
-    
-    print("Processing ${deviceContacts.length} device contacts with ${savedContacts.length} saved contacts and ${callLogs.length} call logs");
-    
+
+    print(
+        "Processing ${deviceContacts.length} device contacts with ${savedContacts.length} saved contacts and ${callLogs.length} call logs");
+
     final savedPhones = Set<String>.from(
       savedContacts.map((c) => c['contactPhoneNumber']?.toString() ?? ''),
     );
@@ -563,15 +609,15 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
         final phoneNumber = log['phoneNumber']?.toString() ?? '';
         if (phoneNumber.isNotEmpty) {
           String cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
-          
+
           List<String> possibleNumbers = [cleanNumber];
-          
+
           if (cleanNumber.startsWith('+91') && cleanNumber.length == 13) {
-            possibleNumbers.add(cleanNumber.substring(3)); 
+            possibleNumbers.add(cleanNumber.substring(3));
           } else if (cleanNumber.length == 10) {
             possibleNumbers.add('+91$cleanNumber');
           }
-          
+
           for (String number in possibleNumbers) {
             callCounts[number] = (callCounts[number] ?? 0) + 1;
           }
@@ -584,12 +630,13 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     dev.log("Call counts calculated: ${callCounts.length} unique numbers");
 
     final processedDeviceContacts = deviceContacts.map((contact) {
-      final phone = contact['phones'].isNotEmpty ? contact['phones'][0].toString() : '';
-      
+      final phone =
+          contact['phones'].isNotEmpty ? contact['phones'][0].toString() : '';
+
       String cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
-      
+
       int callCount = 0;
-      
+
       if (callCounts.containsKey(cleanPhone)) {
         callCount = callCounts[cleanPhone]!;
       } else {
@@ -601,7 +648,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           callCount = callCounts[withCountryCode] ?? 0;
         }
       }
-      
+
       return {
         ...contact,
         'isSaved': savedPhones.contains(phone),
@@ -611,16 +658,17 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     }).toList();
 
     final devicePhones = Set<String>.from(
-      deviceContacts.map((c) => c['phones'].isNotEmpty ? c['phones'][0].toString() : ''),
+      deviceContacts
+          .map((c) => c['phones'].isNotEmpty ? c['phones'][0].toString() : ''),
     );
-    
+
     final manualContacts = savedContacts.where((savedContact) {
       final phone = savedContact['contactPhoneNumber']?.toString() ?? '';
       return phone.isNotEmpty && !devicePhones.contains(phone);
     }).map((savedContact) {
       final phone = savedContact['contactPhoneNumber']?.toString() ?? '';
       String cleanPhone = phone.replaceAll(RegExp(r'[^\d+]'), '');
-      
+
       int callCount = 0;
       if (callCounts.containsKey(cleanPhone)) {
         callCount = callCounts[cleanPhone]!;
@@ -633,7 +681,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           callCount = callCounts[withCountryCode] ?? 0;
         }
       }
-      
+
       return {
         'id': 'manual_${savedContact['contactPhoneNumber']}',
         'displayName': savedContact['contactName'] ?? 'Unknown',
@@ -654,7 +702,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       return a['displayName'].compareTo(b['displayName']);
     });
 
-    print("Final processed contacts: ${allContacts.length} (${processedDeviceContacts.length} device + ${manualContacts.length} manual)");
+    print(
+        "Final processed contacts: ${allContacts.length} (${processedDeviceContacts.length} device + ${manualContacts.length} manual)");
     return allContacts;
   }
 
@@ -701,8 +750,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     try {
       if (event.isEditing) {
         final ApiService api = ApiService();
-        await api.updateProfile(
-            email: event.email!, address: event.address!);
+        await api.updateProfile(email: event.email!, address: event.address!);
         emit(ProfileUpdatedState(
             !event.isEditing, event.email!, event.address!));
       } else {
@@ -723,10 +771,10 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       // Clear all stored user data
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.clear();
-      
+
       // Emit logout state
       emit(LogoutState());
-      
+
       dev.log("User logged out successfully");
     } catch (e) {
       dev.log("Error during logout: $e");

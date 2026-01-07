@@ -3,6 +3,8 @@ part of 'home_bloc.dart';
 @immutable
 abstract class HomeEvent {}
 
+class GetStartedEvent extends HomeEvent {}
+
 class ShowContactsEvent extends HomeEvent {}
 
 class AddContactEvent extends HomeEvent {
@@ -49,8 +51,7 @@ class UpdateProfileEvent extends HomeEvent {
   final String? address;
   final bool isEditing;
 
-  UpdateProfileEvent(
-      {this.email, this.address, required this.isEditing});
+  UpdateProfileEvent({this.email, this.address, required this.isEditing});
 }
 
 class LogoutEvent extends HomeEvent {}
