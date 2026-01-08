@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_setup/bloc/home_bloc.dart';
 import 'package:flutter_setup/components/navigation_drawer.dart';
-import 'package:flutter_setup/data/services/sos_service.dart';
+import 'package:flutter_setup/data/services/ble_manager.dart'; // Import BLE Manager
 import 'package:flutter_setup/theme/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -25,7 +25,42 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     homeBloc = HomeBloc();
-    SOSService().setHomeBloc(homeBloc);
+
+    // Trigger BLE connection immediately when screen loads
+    _startBackgroundServices();
+  }
+
+  /// Initializes BLE and starts looking for the Suraksha Band
+  Future<void> _startBackgroundServices() async {
+    print("HomeScreen: Initializing background services...");
+    final bleManager = BLEManager();
+
+    // 1. Initialize (Request permissions, start background service)
+    final bool isInitialized = await bleManager.initialize();
+
+    if (isInitialized) {
+      print("HomeScreen: BLE Initialized. Starting Auto-Connect...");
+      // 2. Start scanning/connecting to the band
+      bleManager.startAutoConnect();
+    } else {
+      print("HomeScreen: BLE Initialization failed (Permissions denied?)");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content:
+                const Text('Bluetooth permissions required for Safety Band'),
+            backgroundColor: AppTheme.error,
+            action: SnackBarAction(
+              label: 'Settings',
+              textColor: Colors.white,
+              onPressed: () {
+                // You could add openAppSettings() here from permission_handler
+              },
+            ),
+          ),
+        );
+      }
+    }
   }
 
   @override
@@ -105,14 +140,14 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 16),
                   _buildSOSButton(context, state, homeBloc, screenHeight),
                   const SizedBox(height: 32),
-                  
+
                   // Quick Actions
                   _buildQuickActions(context),
-                  
+
                   const SizedBox(height: 32),
                   _buildOrDivider(),
                   const SizedBox(height: 32),
-                  
+
                   _buildDetailsForm(context, screenHeight),
                   const SizedBox(height: 24),
                   _buildSubmitButton(context, state, homeBloc, screenHeight),
@@ -125,6 +160,8 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
+  // ... (Rest of your widgets: _buildQuickActions, _buildSOSButton, etc. remain unchanged)
 
   Widget _buildQuickActions(BuildContext context) {
     return Column(
@@ -166,8 +203,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildQuickActionCard(
-      BuildContext context, IconData icon, String label, String number, Color color) {
+  Widget _buildQuickActionCard(BuildContext context, IconData icon,
+      String label, String number, Color color) {
     return Material(
       color: Colors.transparent,
       child: InkWell(
@@ -226,7 +263,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _makePhoneCall(BuildContext context, String phoneNumber) async {
     final Uri phoneUri = Uri(scheme: 'tel', path: phoneNumber);
-    
+
     try {
       if (await canLaunchUrl(phoneUri)) {
         await launchUrl(phoneUri);
@@ -300,8 +337,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildSOSButton(BuildContext context, dynamic state,
-      HomeBloc homeBloc, double screenHeight) {
+  Widget _buildSOSButton(BuildContext context, dynamic state, HomeBloc homeBloc,
+      double screenHeight) {
     return BlocBuilder(
       bloc: homeBloc,
       builder: (context, state) {
@@ -449,7 +486,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
-                                padding: const EdgeInsets.symmetric(vertical: 12),
+                                padding:
+                                    const EdgeInsets.symmetric(vertical: 12),
                               ),
                               child: const Text(
                                 'OK',

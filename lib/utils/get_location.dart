@@ -7,58 +7,57 @@ Future<Map<String, double>?> getLocation() async {
   try {
     log("Getting location");
     Location location = Location();
-    log("Location object created");
+
+    // --- CRITICAL FIX FOR BACKGROUND ---
+    // 1. Enable background mode to allow fetching while locked/minimized
+    try {
+      await location.enableBackgroundMode(enable: true);
+      log("Background mode enabled");
+    } catch (e) {
+      log("Could not enable background mode: $e");
+    }
+
+    // 2. Change Settings for faster lock (High Accuracy)
+    await location.changeSettings(
+        accuracy: LocationAccuracy.high, // Force GPS
+        interval: 1000, // Update every 1s
+        distanceFilter: 0 // Update on any movement
+        );
+    // ----------------------------------
 
     bool serviceEnabled;
     PermissionStatus permissionGranted;
     LocationData locationData;
 
     serviceEnabled = await location.serviceEnabled();
-    log("Service enabled status: $serviceEnabled");
     if (!serviceEnabled) {
-      log("Service not enabled, requesting service");
       serviceEnabled = await location.requestService();
-      if (!serviceEnabled) {
-        log("Service still not enabled, returning null");
-        return null;
-      }
+      if (!serviceEnabled) return null;
     }
-    log("Service enabled");
 
     permissionGranted = await location.hasPermission();
-    log("Current permission status: $permissionGranted");
     if (permissionGranted == PermissionStatus.denied) {
-      log("Permission denied, requesting permission");
       permissionGranted = await location.requestPermission();
-      log("New permission status after request: $permissionGranted");
-      if (permissionGranted != PermissionStatus.granted) {
-        log("Permission still denied, returning null");
-        return null;
-      }
+      if (permissionGranted != PermissionStatus.granted) return null;
     }
-    log("Permission granted");
 
-    log("About to get location data");
-    log("Inside try block");
+    log("Fetching location...");
+    // Increased timeout to 15s because GPS cold lock takes time
     locationData = await location.getLocation().timeout(
-      const Duration(seconds: 10),
+      const Duration(seconds: 15),
       onTimeout: () {
-        log("Location fetch timed out");
         throw TimeoutException('Location fetch timed out');
       },
     );
-    log("After location.getLocation()"); // New log to debug
-    log("Location data retrieved successfully");
-    log("Location data - Latitude: ${locationData.latitude}");
-    log("Location data - Longitude: ${locationData.longitude}");
+
+    log("Location: ${locationData.latitude}, ${locationData.longitude}");
 
     return {
       'latitude': locationData.latitude ?? 0.0,
       'longitude': locationData.longitude ?? 0.0,
     };
-  } catch (e, stackTrace) {
+  } catch (e) {
     log("Error in getLocation: $e");
-    log("Stack trace: $stackTrace");
     return null;
   }
 }
