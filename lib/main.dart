@@ -3,7 +3,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_setup/bloc/home_bloc.dart';
 import 'package:flutter_setup/data/services/background_service.dart';
-import 'package:flutter_setup/data/services/ble_manager.dart';
 import 'package:flutter_setup/router/router_config.dart';
 import 'package:flutter_setup/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
@@ -11,24 +10,15 @@ import 'package:go_router/go_router.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await dotenv.load(fileName: ".env");
+
+  // 1. Configure Background Service (Create channels, setup isolate)
+  // Note: The service does NOT start here (autoStart is false).
+  // It will be started by BLEManager in HomeScreen.
   try {
     await initializeBackgroundService();
-    print('Background service initialized successfully');
+    print('Background service configured successfully');
   } catch (e) {
-    print('Error initializing background service: $e');
-  }
-
-  try {
-    final bleManager = BLEManager();
-    final initialized = await bleManager.initialize();
-    if (initialized) {
-      print('BLE Manager initialized, starting auto-connect...');
-      bleManager.startAutoConnect();
-    } else {
-      print('BLE Manager initialization failed - permissions not granted');
-    }
-  } catch (e) {
-    print('Error initializing BLE Manager: $e');
+    print('Error configuring background service: $e');
   }
 
   runApp(const MyApp());

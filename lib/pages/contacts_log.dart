@@ -309,14 +309,14 @@ class LogWidget extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        log['city'] ?? 'Unknown Location',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          color: AppTheme.textPrimary,
-                        ),
-                      ),
+                      // Text(
+                      //   log['city'] ?? 'Unknown Location',
+                      //   style: TextStyle(
+                      //     fontSize: 16,
+                      //     fontWeight: FontWeight.w600,
+                      //     color: AppTheme.textPrimary,
+                      //   ),
+                      // ),
                       const SizedBox(height: 2),
                       Text(
                         _formatDate(log['timestamp']?.toString() ?? ''),
