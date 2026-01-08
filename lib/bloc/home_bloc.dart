@@ -413,10 +413,21 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       }
 
       // 3. Prepare Contact Data
+      print(event.contact);
       final contactName = event.contact['displayName'] ?? 'Unknown';
-      final contactPhone = event.contact['phones']?.isNotEmpty == true
+
+      // Get raw phone
+      String contactPhone = event.contact['phones']?.isNotEmpty == true
           ? event.contact['phones'][0].toString()
           : '';
+
+      // --- FIX: Remove +91 prefix if present ---
+      if (contactPhone.startsWith('+91')) {
+        contactPhone = contactPhone.substring(3);
+      }
+      // Optional: Clean up any spaces just in case
+      contactPhone = contactPhone.trim();
+      // -----------------------------------------
 
       if (contactPhone.isEmpty) {
         emit(ContactsErrorState('Invalid contact phone number'));
@@ -431,8 +442,8 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
           userPhoneNumber: phoneNumber,
           contactName: contactName,
           contactPhoneNumber: contactPhone);
-
-      if (response == 200) {
+      print(response);
+      if (response == 201) {
         print("Contact added successfully");
         add(ShowContactsEvent());
       } else {
