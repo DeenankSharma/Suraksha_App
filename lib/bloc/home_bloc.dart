@@ -148,6 +148,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     HelpButtonClickedEvent event,
     Emitter<HomeState> emit,
   ) async {
+    emit(EmergencyLoadingState());
     try {
       final SharedPreferences prefs = await SharedPreferences.getInstance();
       final String phoneNumber = prefs.getString('phoneNumber')!;
@@ -174,7 +175,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       emit(HelpRequestedState("emer"));
     } catch (er) {
       dev.log("Error in emergency help: $er");
-      emit(HelpRequestedState("emer"));
+      emit(EmergencyErrorState(er.toString()));
     }
   }
 

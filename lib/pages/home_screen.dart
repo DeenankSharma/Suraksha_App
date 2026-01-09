@@ -20,6 +20,7 @@ class _HomeScreenState extends State<HomeScreen> {
   final _landmarkController = TextEditingController();
   final _descriptionController = TextEditingController();
   late HomeBloc homeBloc;
+  bool _isLoadingDialogShown = false;
 
   @override
   void initState() {
@@ -73,7 +74,262 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return BlocConsumer(
       bloc: homeBloc,
-      listener: (context, state) {},
+      listener: (context, state) {
+        if (state is EmergencyLoadingState && !_isLoadingDialogShown) {
+          _isLoadingDialogShown = true;
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (BuildContext dialogContext) {
+              return AlertDialog(
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                content: Row(
+                  children: [
+                    CircularProgressIndicator(
+                      color: AppTheme.primary,
+                    ),
+                    const SizedBox(width: 20),
+                    const Text('Sending SOS alert...'),
+                  ],
+                ),
+              );
+            },
+          );
+        }
+        ////handle emergency success state
+        else if (state is HelpRequestedState && state.type == "emer") {
+          if (_isLoadingDialogShown) {
+            Navigator.of(context).pop();
+            _isLoadingDialogShown = false;
+          }
+          showDialog(
+            context: context,
+            builder: (BuildContext dialogContext) {
+              return AlertDialog(
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                title: Row(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: AppTheme.success.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        CupertinoIcons.check_mark_circled_solid,
+                        color: AppTheme.success,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'SOS Alert Sent',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 8),
+                    Text(
+                      'Your emergency alert has been sent to all your emergency contacts.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppTheme.textPrimary,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.success.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppTheme.success.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            CupertinoIcons.info_circle,
+                            color: AppTheme.success,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Help is on the way! Stay safe.',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppTheme.success,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.primary,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text(
+                        'OK',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        }
+        /////handle emergency error state
+        else if (state is EmergencyErrorState) {
+          if (_isLoadingDialogShown) {
+            Navigator.of(context).pop();
+            _isLoadingDialogShown = false;
+          }
+          showDialog(
+            context: context,
+            builder: (BuildContext dialogContext) {
+              return AlertDialog(
+                backgroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                title: Row(
+                  children: [
+                    Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        color: AppTheme.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        CupertinoIcons.exclamationmark_triangle_fill,
+                        color: AppTheme.error,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'SOS Alert Failed',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textPrimary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 8),
+                    Text(
+                      'Failed to send emergency alert. Please check your internet connection and try again.',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: AppTheme.textPrimary,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppTheme.error.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: AppTheme.error.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            CupertinoIcons.info_circle,
+                            color: AppTheme.error,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Error: ${state.error}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: AppTheme.error,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                actions: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppTheme.error,
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text(
+                        'OK',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          );
+        }
+      },
       builder: (context, state) {
         return _buildScaffold(context, state, homeBloc);
       },
@@ -363,145 +619,9 @@ class _HomeScreenState extends State<HomeScreen> {
             color: Colors.transparent,
             child: InkWell(
               borderRadius: BorderRadius.circular(24),
-              onTap: () async {
+              onTap: () {
                 if (!isHelpRequested) {
-                  showDialog(
-                    context: context,
-                    barrierDismissible: false,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        backgroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16),
-                        ),
-                        content: Row(
-                          children: [
-                            CircularProgressIndicator(
-                              color: AppTheme.primary,
-                            ),
-                            const SizedBox(width: 20),
-                            const Text('Sending SOS alert...'),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-
                   homeBloc.add(HelpButtonClickedEvent());
-
-                  await Future.delayed(const Duration(seconds: 2));
-
-                  Navigator.of(context).pop();
-
-                  showDialog(
-                    context: context,
-                    builder: (BuildContext context) {
-                      return AlertDialog(
-                        backgroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        title: Row(
-                          children: [
-                            Container(
-                              width: 50,
-                              height: 50,
-                              decoration: BoxDecoration(
-                                color: AppTheme.success.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Icon(
-                                CupertinoIcons.check_mark_circled_solid,
-                                color: AppTheme.success,
-                                size: 30,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                'SOS Alert Sent',
-                                style: TextStyle(
-                                  fontSize: 20,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppTheme.textPrimary,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const SizedBox(height: 8),
-                            Text(
-                              'Your emergency alert has been sent to all your emergency contacts.',
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: AppTheme.textPrimary,
-                                height: 1.4,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: AppTheme.success.withOpacity(0.1),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: AppTheme.success.withOpacity(0.3),
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Icon(
-                                    CupertinoIcons.info_circle,
-                                    color: AppTheme.success,
-                                    size: 20,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Expanded(
-                                    child: Text(
-                                      'Help is on the way! Stay safe.',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: AppTheme.success,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                        actions: [
-                          SizedBox(
-                            width: double.infinity,
-                            child: ElevatedButton(
-                              onPressed: () => Navigator.of(context).pop(),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppTheme.primary,
-                                foregroundColor: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 12),
-                              ),
-                              child: const Text(
-                                'OK',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  );
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
