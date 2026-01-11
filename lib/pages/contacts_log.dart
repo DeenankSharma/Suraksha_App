@@ -4,11 +4,77 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_setup/bloc/home_bloc.dart';
 import 'package:flutter_setup/theme/app_theme.dart';
 import 'package:go_router/go_router.dart'; // Import GoRouter
+import 'package:shared_preferences/shared_preferences.dart';
+import 'dart:convert';
 
 import '../components/navigation_drawer.dart';
+import '../data/services/apis.dart';
+import '../data/models/auth_data_model.dart';
 
-class ContactsLog extends StatelessWidget {
+class ContactsLog extends StatefulWidget {
   const ContactsLog({super.key});
+
+  @override
+  State<ContactsLog> createState() => _ContactsLogState();
+}
+
+class _ContactsLogState extends State<ContactsLog> {
+  Map<String, String>? _contactNameMap;
+  bool _isLoadingContacts = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSavedContacts();
+  }
+
+  Future<void> _loadSavedContacts() async {
+    if (_isLoadingContacts) return;
+    
+    setState(() {
+      _isLoadingContacts = true;
+    });
+
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? authJson = prefs.getString('auth_data');
+      
+      if (authJson != null) {
+        final authData = AuthData.fromJson(jsonDecode(authJson));
+        final ApiService api = ApiService();
+        final savedContacts = await api.getSavedContacts(authData.phoneNumber);
+        
+        final Map<String, String> nameMap = {};
+        for (var contact in savedContacts) {
+          final phone = contact['contactPhoneNumber']?.toString() ?? '';
+          final name = contact['contactName']?.toString() ?? '';
+          if (phone.isNotEmpty && name.isNotEmpty) {
+            nameMap[phone] = name;
+          }
+        }
+        
+        if (mounted) {
+          setState(() {
+            _contactNameMap = nameMap;
+            _isLoadingContacts = false;
+          });
+        }
+      } else {
+        if (mounted) {
+          setState(() {
+            _isLoadingContacts = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading saved contacts: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingContacts = false;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -133,11 +199,16 @@ class ContactsLog extends StatelessWidget {
           _buildLogsList(
             context,
             state.logs['logs']?['logs'] ?? [],
+            contactNameMap: _contactNameMap,
           ),
 
           // FIX 2: Access ['detailed_logs']['logs']
-          _buildLogsList(context, state.logs['detailed_logs']?['logs'] ?? [],
-              isDetailed: true),
+          _buildLogsList(
+            context,
+            state.logs['detailed_logs']?['logs'] ?? [],
+            isDetailed: true,
+            contactNameMap: _contactNameMap,
+          ),
         ],
       );
     }
@@ -198,8 +269,12 @@ class ContactsLog extends StatelessWidget {
     );
   }
 
-  Widget _buildLogsList(BuildContext context, dynamic logsRaw,
-      {bool isDetailed = false}) {
+  Widget _buildLogsList(
+    BuildContext context,
+    dynamic logsRaw, {
+    bool isDetailed = false,
+    Map<String, String>? contactNameMap,
+  }) {
     List<Map<String, dynamic>> logs = [];
     try {
       if (logsRaw is List) {
@@ -256,6 +331,7 @@ class ContactsLog extends StatelessWidget {
           return LogWidget(
             log: log,
             isDetailed: isDetailed,
+            contactNameMap: contactNameMap,
           );
         },
       ),
@@ -266,12 +342,32 @@ class ContactsLog extends StatelessWidget {
 class LogWidget extends StatelessWidget {
   final Map<String, dynamic> log;
   final bool isDetailed;
+  final Map<String, String>? contactNameMap;
 
   const LogWidget({
     super.key,
     required this.log,
     this.isDetailed = false,
+    this.contactNameMap,
   });
+  
+  String _getContactPhoneNumber() {
+    return log['phoneNumber']?.toString() ?? 'Unknown';
+  }
+  
+  String _getContactName() {
+    final logName = log['contactName']?.toString();
+    if (logName != null && logName.isNotEmpty) {
+      return logName;
+    }
+    
+    final contactPhone = _getContactPhoneNumber();
+    if (contactPhone != 'Unknown' && contactNameMap != null) {
+      return contactNameMap![contactPhone] ?? contactPhone;
+    }
+    
+    return contactPhone;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -338,9 +434,11 @@ class LogWidget extends StatelessWidget {
             Divider(color: AppTheme.accent.withOpacity(0.3)),
             const SizedBox(height: 12),
             _buildInfoRow(
-              CupertinoIcons.phone_fill,
-              'Phone',
-              log['phoneNumber']?.toString() ?? 'Unknown',
+              CupertinoIcons.person_fill,
+              'Contact',
+              _getContactName() != _getContactPhoneNumber()
+                  ? '${_getContactName()} (${_getContactPhoneNumber()})'
+                  : _getContactPhoneNumber(),
             ),
             if (isDetailed) ...[
               const SizedBox(height: 8),
