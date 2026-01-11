@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_setup/bloc/home_bloc.dart';
 import 'package:flutter_setup/components/contact_widget.dart';
@@ -7,27 +8,14 @@ import 'package:flutter_setup/components/navigation_drawer.dart';
 import 'package:flutter_setup/theme/app_theme.dart';
 import 'package:go_router/go_router.dart';
 
-class Contacts extends StatefulWidget {
-  const Contacts({super.key});
+class Contacts extends StatelessWidget {
+  Contacts({super.key});
 
-  @override
-  State<Contacts> createState() => _ContactsState();
-}
+  final _searchController = TextEditingController();
+  final _searchQuery = ValueNotifier<String>('');
+  final _sortByCallFrequency = ValueNotifier<bool>(false);
 
-class _ContactsState extends State<Contacts> {
-  final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
-  bool _sortByCallFrequency = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HomeBloc>().add(ShowContactsEvent());
-    });
-  }
-
-  void _removeEmergencyContact(Map<String, dynamic> contact) {
+  void _removeEmergencyContact(BuildContext context, Map<String, dynamic> contact) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -59,30 +47,24 @@ class _ContactsState extends State<Contacts> {
     );
   }
 
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
   List<Map<String, dynamic>> _filterAndSortContacts(
-      List<Map<String, dynamic>> contacts) {
+      List<Map<String, dynamic>> contacts, String searchQuery, bool sortByCallFrequency) {
     List<Map<String, dynamic>> filteredContacts = List.from(contacts);
 
     // Filter by search query
-    if (_searchQuery.isNotEmpty) {
+    if (searchQuery.isNotEmpty) {
       filteredContacts = filteredContacts.where((contact) {
         final name = contact['displayName']?.toString().toLowerCase() ?? '';
         final phones = contact['phones'] as List? ?? [];
         final phoneNumbers = phones.map((phone) => phone.toString()).join(' ');
 
-        return name.contains(_searchQuery.toLowerCase()) ||
-            phoneNumbers.contains(_searchQuery);
+        return name.contains(searchQuery.toLowerCase()) ||
+            phoneNumbers.contains(searchQuery);
       }).toList();
     }
 
     // Sort
-    if (_sortByCallFrequency) {
+    if (sortByCallFrequency) {
       filteredContacts.sort((a, b) {
         final aCalls = a['callCount'] ?? 0;
         final bCalls = b['callCount'] ?? 0;
@@ -101,137 +83,148 @@ class _ContactsState extends State<Contacts> {
   }
 
   Widget _buildSearchAndSortBar() {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(
-          bottom: BorderSide(
-            color: AppTheme.accent.withOpacity(0.3),
-          ),
-        ),
-      ),
-      child: Column(
-        children: [
-          // Search bar
-          TextField(
-            controller: _searchController,
-            style: TextStyle(color: AppTheme.textPrimary),
-            decoration: InputDecoration(
-              hintText: 'Search by name or number...',
-              prefixIcon: Icon(CupertinoIcons.search, color: AppTheme.primary),
-              suffixIcon: _searchQuery.isNotEmpty
-                  ? IconButton(
-                      icon: Icon(
-                        CupertinoIcons.clear_circled,
-                        color: AppTheme.textSecondary,
-                      ),
-                      onPressed: () {
-                        _searchController.clear();
-                        setState(() {
-                          _searchQuery = '';
-                        });
-                      },
-                    )
-                  : null,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppTheme.accent),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppTheme.accent),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: AppTheme.primary, width: 2),
-              ),
-              filled: true,
-              fillColor: AppTheme.background,
-            ),
-            onChanged: (value) {
-              setState(() {
-                _searchQuery = value;
-              });
-            },
-          ),
-          const SizedBox(height: 12),
-          // Sort options
-          Row(
-            children: [
-              Text(
-                'Sort by:',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppTheme.textSecondary,
+    return ValueListenableBuilder<String>(
+      valueListenable: _searchQuery,
+      builder: (context, searchQuery, _) {
+        return ValueListenableBuilder<bool>(
+          valueListenable: _sortByCallFrequency,
+          builder: (context, sortByCallFrequency, _) {
+            return Container(
+              padding: const EdgeInsets.all(16.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(
+                    color: AppTheme.accent.withOpacity(0.3),
+                  ),
                 ),
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Wrap(
-                  spacing: 8,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('Name'),
-                      selected: !_sortByCallFrequency,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            _sortByCallFrequency = false;
-                          });
-                        }
-                      },
-                      selectedColor: AppTheme.primary.withOpacity(0.2),
-                      backgroundColor: Colors.white,
-                      labelStyle: TextStyle(
-                        color: _sortByCallFrequency
-                            ? AppTheme.textSecondary
-                            : AppTheme.primary,
-                        fontWeight: FontWeight.w500,
+              child: Column(
+                children: [
+                  TextField(
+                    controller: _searchController,
+                    style: TextStyle(color: AppTheme.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Search by name or number...',
+                      prefixIcon: Icon(CupertinoIcons.search, color: AppTheme.primary),
+                      suffixIcon: searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: Icon(
+                                CupertinoIcons.clear_circled,
+                                color: AppTheme.textSecondary,
+                              ),
+                              onPressed: () {
+                                _searchController.clear();
+                                _searchQuery.value = '';
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppTheme.accent),
                       ),
-                      side: BorderSide(
-                        color: _sortByCallFrequency
-                            ? AppTheme.accent
-                            : AppTheme.primary,
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppTheme.accent),
                       ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: AppTheme.primary, width: 2),
+                      ),
+                      filled: true,
+                      fillColor: AppTheme.background,
                     ),
-                    ChoiceChip(
-                      label: const Text('Call Frequency'),
-                      selected: _sortByCallFrequency,
-                      onSelected: (selected) {
-                        if (selected) {
-                          setState(() {
-                            _sortByCallFrequency = true;
-                          });
-                        }
-                      },
-                      selectedColor: AppTheme.primary.withOpacity(0.2),
-                      backgroundColor: Colors.white,
-                      labelStyle: TextStyle(
-                        color: _sortByCallFrequency
-                            ? AppTheme.primary
-                            : AppTheme.textSecondary,
-                        fontWeight: FontWeight.w500,
+                    onChanged: (value) {
+                      _searchQuery.value = value;
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Text(
+                        'Sort by:',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: AppTheme.textSecondary,
+                        ),
                       ),
-                      side: BorderSide(
-                        color: _sortByCallFrequency
-                            ? AppTheme.primary
-                            : AppTheme.accent,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Wrap(
+                          spacing: 8,
+                          children: [
+                            ChoiceChip(
+                              label: const Text('Name'),
+                              selected: !sortByCallFrequency,
+                              onSelected: (selected) {
+                                if (selected) {
+                                  _sortByCallFrequency.value = false;
+                                }
+                              },
+                              selectedColor: AppTheme.primary.withOpacity(0.2),
+                              backgroundColor: Colors.white,
+                              labelStyle: TextStyle(
+                                color: sortByCallFrequency
+                                    ? AppTheme.textSecondary
+                                    : AppTheme.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              side: BorderSide(
+                                color: sortByCallFrequency
+                                    ? AppTheme.accent
+                                    : AppTheme.primary,
+                              ),
+                            ),
+                            ChoiceChip(
+                              label: const Text('Call Frequency'),
+                              selected: sortByCallFrequency,
+                              onSelected: (selected) {
+                                if (selected) {
+                                  _sortByCallFrequency.value = true;
+                                }
+                              },
+                              selectedColor: AppTheme.primary.withOpacity(0.2),
+                              backgroundColor: Colors.white,
+                              labelStyle: TextStyle(
+                                color: sortByCallFrequency
+                                    ? AppTheme.primary
+                                    : AppTheme.textSecondary,
+                                fontWeight: FontWeight.w500,
+                              ),
+                              side: BorderSide(
+                                color: sortByCallFrequency
+                                    ? AppTheme.primary
+                                    : AppTheme.accent,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
-        ],
-      ),
+            );
+          },
+        );
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        final state = context.read<HomeBloc>().state;
+        if (state is! ContactsLoadingState && 
+            state is! ContactsFetchedState && 
+            state is! ContactsErrorState) {
+          context.read<HomeBloc>().add(ShowContactsEvent());
+        }
+      }
+    });
+
     return BlocConsumer<HomeBloc, HomeState>(
       listener: (context, state) {
         // --- Navigation Logic ---
@@ -328,163 +321,170 @@ class _ContactsState extends State<Contacts> {
       final deviceContacts =
           state.contacts.where((c) => c['isSaved'] == false).toList();
 
-      return SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- Section 1: Saved Emergency Contacts ---
-            if (savedContacts.isNotEmpty) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16.0),
-                margin: const EdgeInsets.all(12.0),
-                decoration: BoxDecoration(
-                  color: AppTheme.error.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppTheme.error.withOpacity(0.3),
-                    width: 2,
-                  ),
-                ),
+      return ValueListenableBuilder<String>(
+        valueListenable: _searchQuery,
+        builder: (context, searchQuery, _) {
+          return ValueListenableBuilder<bool>(
+            valueListenable: _sortByCallFrequency,
+            builder: (context, sortByCallFrequency, _) {
+              return SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Icon(
-                          CupertinoIcons.exclamationmark_shield_fill,
-                          color: AppTheme.error,
-                          size: 24,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Emergency Contacts (${savedContacts.length})',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.error,
+                    if (savedContacts.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16.0),
+                        margin: const EdgeInsets.all(12.0),
+                        decoration: BoxDecoration(
+                          color: AppTheme.error.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppTheme.error.withOpacity(0.3),
+                            width: 2,
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    ...savedContacts.map(
-                      (contact) {
-                        final displayName = contact['displayName'] ??
-                            contact['contactName'] ??
-                            'Unknown';
-                        // Handle phone number variations (list or single string)
-                        String phoneNumber = '';
-                        if (contact['phones'] != null &&
-                            (contact['phones'] as List).isNotEmpty) {
-                          phoneNumber = contact['phones'][0].toString();
-                        } else if (contact['contactPhoneNumber'] != null) {
-                          phoneNumber =
-                              contact['contactPhoneNumber'].toString();
-                        }
-
-                        return Card(
-                          margin: const EdgeInsets.symmetric(vertical: 4),
-                          elevation: 0,
-                          color: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(
-                              color: AppTheme.accent.withOpacity(0.3),
-                            ),
-                          ),
-                          child: ListTile(
-                            leading: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: AppTheme.error,
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Center(
-                                child: Text(
-                                  displayName.isNotEmpty
-                                      ? displayName[0].toUpperCase()
-                                      : 'U',
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w600,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  CupertinoIcons.exclamationmark_shield_fill,
+                                  color: AppTheme.error,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Emergency Contacts (${savedContacts.length})',
+                                  style: TextStyle(
                                     fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.error,
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
-                            title: Text(
-                              displayName,
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                color: AppTheme.textPrimary,
-                              ),
-                            ),
-                            subtitle: Text(
-                              phoneNumber,
-                              style: TextStyle(
-                                color: AppTheme.textSecondary,
-                              ),
-                            ),
-                            trailing: IconButton(
-                              icon: Icon(
-                                CupertinoIcons.minus_circle,
-                                color: AppTheme.error,
-                              ),
-                              onPressed: () => _removeEmergencyContact(contact),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            ],
+                            const SizedBox(height: 12),
+                            ...savedContacts.map(
+                              (contact) {
+                                final displayName = contact['displayName'] ??
+                                    contact['contactName'] ??
+                                    'Unknown';
+                                String phoneNumber = '';
+                                if (contact['phones'] != null &&
+                                    (contact['phones'] as List).isNotEmpty) {
+                                  phoneNumber = contact['phones'][0].toString();
+                                } else if (contact['contactPhoneNumber'] != null) {
+                                  phoneNumber =
+                                      contact['contactPhoneNumber'].toString();
+                                }
 
-            // --- Section 2: Device Contacts ---
-            if (deviceContacts.isNotEmpty) ...[
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16.0),
-                margin: const EdgeInsets.all(12.0),
-                decoration: BoxDecoration(
-                  color: AppTheme.primary.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppTheme.primary.withOpacity(0.3),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          CupertinoIcons.person_crop_circle_fill,
-                          color: AppTheme.primary,
-                          size: 24,
+                                return Card(
+                                  margin: const EdgeInsets.symmetric(vertical: 4),
+                                  elevation: 0,
+                                  color: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                    side: BorderSide(
+                                      color: AppTheme.accent.withOpacity(0.3),
+                                    ),
+                                  ),
+                                  child: ListTile(
+                                    leading: Container(
+                                      width: 40,
+                                      height: 40,
+                                      decoration: BoxDecoration(
+                                        color: AppTheme.error,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Center(
+                                        child: Text(
+                                          displayName.isNotEmpty
+                                              ? displayName[0].toUpperCase()
+                                              : 'U',
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 18,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    title: Text(
+                                      displayName,
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.w600,
+                                        color: AppTheme.textPrimary,
+                                      ),
+                                    ),
+                                    subtitle: Text(
+                                      phoneNumber,
+                                      style: TextStyle(
+                                        color: AppTheme.textSecondary,
+                                      ),
+                                    ),
+                                    trailing: IconButton(
+                                      icon: Icon(
+                                        CupertinoIcons.minus_circle,
+                                        color: AppTheme.error,
+                                      ),
+                                      onPressed: () => _removeEmergencyContact(context, contact),
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Device Contacts',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: AppTheme.primary,
+                      ),
+                    ],
+
+                    if (deviceContacts.isNotEmpty) ...[
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(16.0),
+                        margin: const EdgeInsets.all(12.0),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primary.withOpacity(0.05),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: AppTheme.primary.withOpacity(0.3),
                           ),
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    _buildDeviceContactsList(deviceContacts),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  CupertinoIcons.person_crop_circle_fill,
+                                  color: AppTheme.primary,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Device Contacts',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppTheme.primary,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            _buildDeviceContactsList(context, deviceContacts, searchQuery, sortByCallFrequency),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
-              ),
-            ],
-          ],
-        ),
+              );
+            },
+          );
+        },
       );
     }
 
@@ -539,8 +539,8 @@ class _ContactsState extends State<Contacts> {
     );
   }
 
-  Widget _buildDeviceContactsList(List<Map<String, dynamic>> deviceContacts) {
-    final filteredContacts = _filterAndSortContacts(deviceContacts);
+  Widget _buildDeviceContactsList(BuildContext context, List<Map<String, dynamic>> deviceContacts, String searchQuery, bool sortByCallFrequency) {
+    final filteredContacts = _filterAndSortContacts(deviceContacts, searchQuery, sortByCallFrequency);
 
     if (filteredContacts.isEmpty) {
       return Center(
@@ -555,8 +555,8 @@ class _ContactsState extends State<Contacts> {
               ),
               const SizedBox(height: 8),
               Text(
-                _searchQuery.isNotEmpty
-                    ? 'No contacts found matching "$_searchQuery"'
+                searchQuery.isNotEmpty
+                    ? 'No contacts found matching "$searchQuery"'
                     : 'No device contacts found',
                 style: TextStyle(
                   fontSize: 14,

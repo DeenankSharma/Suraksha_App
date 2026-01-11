@@ -36,7 +36,7 @@ class AppRouter {
         GoRoute(
           path: '/home',
           name: 'home',
-          builder: (context, state) => const HomeScreen(),
+          builder: (context, state) => HomeScreen(),
         ),
         GoRoute(
           path: '/contacts',
@@ -46,17 +46,17 @@ class AppRouter {
         GoRoute(
           path: '/manage_contacts',
           name: 'manage_contacts',
-          builder: (context, state) => const Contacts(),
+          builder: (context, state) => Contacts(),
         ),
         GoRoute(
           path: '/profile',
           name: 'profile',
-          builder: (context, state) => const ProfilePage(),
+          builder: (context, state) => ProfilePage(),
         ),
         GoRoute(
           path: '/setup',
           name: 'setup',
-          builder: (context, state) => const SetupScreen(),
+          builder: (context, state) => SetupScreen(),
         ),
       ],
     );

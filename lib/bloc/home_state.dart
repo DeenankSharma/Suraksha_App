@@ -53,10 +53,18 @@ class OtpTimeoutState extends HomeState {
 class HomeScreenState extends HomeState {}
 
 // Help States
+class EmergencyLoadingState extends HomeScreenState {}
+
 class HelpRequestedState extends HomeScreenState {
   final String type;
 
   HelpRequestedState(this.type);
+}
+
+class EmergencyErrorState extends HomeScreenState {
+  final String error;
+
+  EmergencyErrorState(this.error);
 }
 
 // Logs States

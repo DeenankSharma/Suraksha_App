@@ -7,24 +7,22 @@ import 'package:go_router/go_router.dart'; // Import GoRouter
 
 import '../components/navigation_drawer.dart';
 
-class ContactsLog extends StatefulWidget {
+class ContactsLog extends StatelessWidget {
   const ContactsLog({super.key});
 
   @override
-  State<ContactsLog> createState() => _ContactsLogState();
-}
-
-class _ContactsLogState extends State<ContactsLog> {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<HomeBloc>().add(GetContactLogsEvent());
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        final state = context.read<HomeBloc>().state;
+        if (state is! LogsLoadingState && 
+            state is! LogsFetchedState && 
+            state is! LogsErrorState) {
+          context.read<HomeBloc>().add(GetContactLogsEvent());
+        }
+      }
+    });
+
     return BlocConsumer<HomeBloc, HomeState>(
       listener: (context, state) {
         // --- Navigation Logic ---
