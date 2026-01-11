@@ -112,8 +112,19 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
 
       final logs = await api.getLogs(phoneNumber: authData.phoneNumber);
 
-      dev.log('Logs fetched successfully: ${logs.toString()}');
-      emit(LogsFetchedState(logs));
+      // 4. Fetch saved contacts (same logic as /emergency API uses)
+      dev.log('Fetching saved contacts for phone number: ${authData.phoneNumber}');
+      final savedContacts = await api.getSavedContacts(authData.phoneNumber);
+      dev.log('Saved contacts fetched: ${savedContacts.length} contacts');
+
+      // 5. Add saved contacts to logs map
+      final logsWithContacts = {
+        ...logs,
+        'savedContacts': savedContacts,
+      };
+
+      dev.log('Logs fetched successfully with contacts');
+      emit(LogsFetchedState(logsWithContacts));
     } catch (e) {
       // 4. Handle API/Network errors (Do not logout here, just show error)
       dev.log('Error fetching logs: $e');

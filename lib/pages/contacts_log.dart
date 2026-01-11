@@ -4,12 +4,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_setup/bloc/home_bloc.dart';
 import 'package:flutter_setup/theme/app_theme.dart';
 import 'package:go_router/go_router.dart'; // Import GoRouter
-import 'package:shared_preferences/shared_preferences.dart';
-import 'dart:convert';
 
 import '../components/navigation_drawer.dart';
-import '../data/services/apis.dart';
-import '../data/models/auth_data_model.dart';
 
 class ContactsLog extends StatefulWidget {
   const ContactsLog({super.key});
@@ -20,60 +16,28 @@ class ContactsLog extends StatefulWidget {
 
 class _ContactsLogState extends State<ContactsLog> {
   Map<String, String>? _contactNameMap;
-  bool _isLoadingContacts = false;
+  List<Map<String, dynamic>>? _savedContactsList;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadSavedContacts();
-  }
-
-  Future<void> _loadSavedContacts() async {
-    if (_isLoadingContacts) return;
+  void _processSavedContacts(List<dynamic> savedContacts) {
+    final Map<String, String> nameMap = {};
+    final List<Map<String, dynamic>> contactsList = [];
     
-    setState(() {
-      _isLoadingContacts = true;
-    });
-
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final String? authJson = prefs.getString('auth_data');
-      
-      if (authJson != null) {
-        final authData = AuthData.fromJson(jsonDecode(authJson));
-        final ApiService api = ApiService();
-        final savedContacts = await api.getSavedContacts(authData.phoneNumber);
-        
-        final Map<String, String> nameMap = {};
-        for (var contact in savedContacts) {
-          final phone = contact['contactPhoneNumber']?.toString() ?? '';
-          final name = contact['contactName']?.toString() ?? '';
-          if (phone.isNotEmpty && name.isNotEmpty) {
-            nameMap[phone] = name;
-          }
-        }
-        
-        if (mounted) {
-          setState(() {
-            _contactNameMap = nameMap;
-            _isLoadingContacts = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _isLoadingContacts = false;
-          });
-        }
-      }
-    } catch (e) {
-      print('Error loading saved contacts: $e');
-      if (mounted) {
-        setState(() {
-          _isLoadingContacts = false;
+    for (var contact in savedContacts) {
+      final phone = contact['contactPhoneNumber']?.toString() ?? '';
+      final name = contact['contactName']?.toString() ?? '';
+      if (phone.isNotEmpty && name.isNotEmpty) {
+        nameMap[phone] = name;
+        contactsList.add({
+          'phoneNumber': phone,
+          'contactName': name,
         });
       }
     }
+    
+    setState(() {
+      _contactNameMap = nameMap;
+      _savedContactsList = contactsList;
+    });
   }
 
   @override
@@ -193,6 +157,16 @@ class _ContactsLogState extends State<ContactsLog> {
     }
 
     if (state is LogsFetchedState) {
+      // Process saved contacts from the logs (fetched in home_bloc)
+      final savedContacts = state.logs['savedContacts'] as List<dynamic>?;
+      if (savedContacts != null && (_contactNameMap == null || _savedContactsList == null)) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _processSavedContacts(savedContacts);
+          }
+        });
+      }
+      
       return TabBarView(
         children: [
           // FIX 1: Access ['logs']['logs']
@@ -200,6 +174,7 @@ class _ContactsLogState extends State<ContactsLog> {
             context,
             state.logs['logs']?['logs'] ?? [],
             contactNameMap: _contactNameMap,
+            savedContactsList: _savedContactsList,
           ),
 
           // FIX 2: Access ['detailed_logs']['logs']
@@ -208,6 +183,7 @@ class _ContactsLogState extends State<ContactsLog> {
             state.logs['detailed_logs']?['logs'] ?? [],
             isDetailed: true,
             contactNameMap: _contactNameMap,
+            savedContactsList: _savedContactsList,
           ),
         ],
       );
@@ -274,6 +250,7 @@ class _ContactsLogState extends State<ContactsLog> {
     dynamic logsRaw, {
     bool isDetailed = false,
     Map<String, String>? contactNameMap,
+    List<Map<String, dynamic>>? savedContactsList,
   }) {
     List<Map<String, dynamic>> logs = [];
     try {
@@ -332,6 +309,7 @@ class _ContactsLogState extends State<ContactsLog> {
             log: log,
             isDetailed: isDetailed,
             contactNameMap: contactNameMap,
+            savedContactsList: savedContactsList,
           );
         },
       ),
@@ -343,24 +321,37 @@ class LogWidget extends StatelessWidget {
   final Map<String, dynamic> log;
   final bool isDetailed;
   final Map<String, String>? contactNameMap;
+  final List<Map<String, dynamic>>? savedContactsList;
 
   const LogWidget({
     super.key,
     required this.log,
     this.isDetailed = false,
     this.contactNameMap,
+    this.savedContactsList,
   });
   
   String _getContactPhoneNumber() {
-    return log['phoneNumber']?.toString() ?? 'Unknown';
+    // The log contains the USER's phone number, not the contact's
+    // Since the backend doesn't store which contact was notified,
+    // we show the first saved contact as a representative
+    if (savedContactsList != null && savedContactsList!.isNotEmpty) {
+      return savedContactsList!.first['phoneNumber']?.toString() ?? 'Unknown';
+    }
+    return 'Unknown';
   }
   
   String _getContactName() {
-    final logName = log['contactName']?.toString();
-    if (logName != null && logName.isNotEmpty) {
-      return logName;
+    // First try to get name from the first saved contact
+    if (savedContactsList != null && savedContactsList!.isNotEmpty) {
+      final firstContact = savedContactsList!.first;
+      final name = firstContact['contactName']?.toString();
+      if (name != null && name.isNotEmpty) {
+        return name;
+      }
     }
     
+    // Fallback: try to lookup by phone number
     final contactPhone = _getContactPhoneNumber();
     if (contactPhone != 'Unknown' && contactNameMap != null) {
       return contactNameMap![contactPhone] ?? contactPhone;
