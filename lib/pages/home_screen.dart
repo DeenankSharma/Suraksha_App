@@ -7,32 +7,16 @@ import 'package:flutter_setup/data/services/ble_manager.dart'; // Import BLE Man
 import 'package:flutter_setup/theme/app_theme.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+class HomeScreen extends StatelessWidget {
+  HomeScreen({super.key});
 
-  @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
   final _formKey = GlobalKey<FormState>();
   final _areaController = TextEditingController();
   final _landmarkController = TextEditingController();
   final _descriptionController = TextEditingController();
-  late HomeBloc homeBloc;
-  bool _isLoadingDialogShown = false;
-
-  @override
-  void initState() {
-    super.initState();
-    homeBloc = HomeBloc();
-
-    // Trigger BLE connection immediately when screen loads
-    _startBackgroundServices();
-  }
 
   /// Initializes BLE and starts looking for the Suraksha Band
-  Future<void> _startBackgroundServices() async {
+  static Future<void> _startBackgroundServices(BuildContext context) async {
     print("HomeScreen: Initializing background services...");
     final bleManager = BLEManager();
 
@@ -45,7 +29,7 @@ class _HomeScreenState extends State<HomeScreen> {
       bleManager.startAutoConnect();
     } else {
       print("HomeScreen: BLE Initialization failed (Permissions denied?)");
-      if (mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content:
@@ -65,19 +49,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   @override
-  void dispose() {
-    homeBloc.close();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return BlocConsumer(
-      bloc: homeBloc,
+    final homeBloc = context.read<HomeBloc>();
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _startBackgroundServices(context);
+    });
+
+    return BlocConsumer<HomeBloc, HomeState>(
       listener: (context, state) {
-        if (state is EmergencyLoadingState && !_isLoadingDialogShown) {
-          _isLoadingDialogShown = true;
-          showDialog(
+        if (state is EmergencyLoadingState) {
+          if (!Navigator.of(context).canPop()) {
+            showDialog(
             context: context,
             barrierDismissible: false,
             builder: (BuildContext dialogContext) {
@@ -97,13 +80,13 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
             },
-          );
+            );
+          }
         }
         ////handle emergency success state
         else if (state is HelpRequestedState && state.type == "emer") {
-          if (_isLoadingDialogShown) {
+          if (Navigator.of(context).canPop()) {
             Navigator.of(context).pop();
-            _isLoadingDialogShown = false;
           }
           showDialog(
             context: context,
@@ -216,9 +199,8 @@ class _HomeScreenState extends State<HomeScreen> {
         }
         /////handle emergency error state
         else if (state is EmergencyErrorState) {
-          if (_isLoadingDialogShown) {
+          if (Navigator.of(context).canPop()) {
             Navigator.of(context).pop();
-            _isLoadingDialogShown = false;
           }
           showDialog(
             context: context,
