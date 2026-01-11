@@ -148,24 +148,43 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
     HelpButtonClickedEvent event,
     Emitter<HomeState> emit,
   ) async {
-    emit(EmergencyLoadingState());
+    emit(EmergencyLoadingState()); // Ensure this state exists in your BLoC
+
     try {
+      // 1. FIXED: Get Phone Number from AuthData JSON
       final SharedPreferences prefs = await SharedPreferences.getInstance();
-      final String phoneNumber = prefs.getString('phoneNumber')!;
+      final String? authJson = prefs.getString('auth_data');
+
+      if (authJson == null) {
+        throw Exception("User session not found. Please login again.");
+      }
+
+      final authData = AuthData.fromJson(authJson);
+      final String phoneNumber = authData.phoneNumber;
+
       dev.log("Emergency help requested for phone: $phoneNumber");
 
-      ApiService api = ApiService();
-      dev.log("API service initialized");
-
+      // 2. Fetch Location (with the background fixes we just added)
       Map<String, dynamic>? locationData = await getLocation();
       dev.log("Location data fetched: $locationData");
 
-      final response = await api.logEmergency(
-          phoneNumber: phoneNumber,
-          longitude: locationData?['longitude'],
-          latitude: locationData?['latitude']);
-      dev.log("Emergency logged to backend: ${response.toString()}");
+      // 3. Log to Backend API
+      ApiService api = ApiService();
+      dev.log("API service initialized");
 
+      try {
+        final response = await api.logEmergency(
+            phoneNumber: phoneNumber,
+            longitude: locationData?['longitude'],
+            latitude: locationData?['latitude']);
+        dev.log("Emergency logged to backend: ${response.toString()}");
+      } catch (apiError) {
+        // Don't stop if backend fails, we still want to send SMS
+        dev.log("Backend log failed, proceeding to SMS: $apiError");
+      }
+
+      // 4. Send SMS Fallback
+      // Ensure this function is defined in your BLoC or imported correctly
       await _sendEmergencySmsWithFallback(
         phoneNumber: phoneNumber,
         locationData: locationData,
@@ -175,7 +194,7 @@ class HomeBloc extends Bloc<HomeEvent, HomeState> {
       emit(HelpRequestedState("emer"));
     } catch (er) {
       dev.log("Error in emergency help: $er");
-      emit(EmergencyErrorState(er.toString()));
+      emit(EmergencyErrorState(er.toString())); // Ensure this state exists
     }
   }
 
