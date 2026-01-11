@@ -15,8 +15,8 @@ class ContactsLog extends StatelessWidget {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (context.mounted) {
         final state = context.read<HomeBloc>().state;
-        if (state is! LogsLoadingState && 
-            state is! LogsFetchedState && 
+        if (state is! LogsLoadingState &&
+            state is! LogsFetchedState &&
             state is! LogsErrorState) {
           context.read<HomeBloc>().add(GetContactLogsEvent());
         }
@@ -129,8 +129,14 @@ class ContactsLog extends StatelessWidget {
     if (state is LogsFetchedState) {
       return TabBarView(
         children: [
-          _buildLogsList(context, state.logs['logs'] ?? []),
-          _buildLogsList(context, state.logs['detailed_logs'] ?? [],
+          // FIX 1: Access ['logs']['logs']
+          _buildLogsList(
+            context,
+            state.logs['logs']?['logs'] ?? [],
+          ),
+
+          // FIX 2: Access ['detailed_logs']['logs']
+          _buildLogsList(context, state.logs['detailed_logs']?['logs'] ?? [],
               isDetailed: true),
         ],
       );
